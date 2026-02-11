@@ -1,6 +1,6 @@
-import cg2ReactImage from 'figma:asset/1adaebb429dea844c383a809ddc9933815950938.png';
-import myLinkImage from 'figma:asset/d3c977461892fe88a85a7a56577a399e87336077.png';
-import webmasterImage from 'figma:asset/a9f549a53dec630eac0ee12616909b57e2eeafb6.png';
+import cg2ReactImage from './assets/1adaebb429dea844c383a809ddc9933815950938.png';
+import myLinkImage from './assets/d3c977461892fe88a85a7a56577a399e87336077.png';
+import webmasterImage from './assets/a9f549a53dec630eac0ee12616909b57e2eeafb6.png';
 
 export function PortfolioPage() {
   return (

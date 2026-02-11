@@ -1,7 +1,7 @@
 import { Home, Search, FileText, Github, BookOpen, FolderKanban } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
-import cockyLogo from 'figma:asset/126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
-import renderLogo from 'figma:asset/8e37ed4b08f466c006fba4657b07905dffc752dd.png';
+import cockyLogo from 'import someimage from '../assets/someassignment.png'126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
+import renderLogo from 'import someimage from '../assets/someassignment.png'8e37ed4b08f466c006fba4657b07905dffc752dd.png';
 
 export function Sidebar() {
   const location = useLocation();

@@ -1,4 +1,4 @@
-import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
+import assignmentImage from 'import someimage from '../assets/someassignment.png'a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
 
 export function ProjectsPage() {
   const phases = [

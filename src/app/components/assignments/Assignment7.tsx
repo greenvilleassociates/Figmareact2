@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
-import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
+import someimage from './someassignment.png';
 
 export function Assignment7() {
   return (

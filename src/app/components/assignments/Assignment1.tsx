@@ -1,7 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
-import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
-
+import assignmentImage from './someassignment.png';
 export function Assignment1() {
   return (
     <div className="flex-1 bg-white flex flex-col">
