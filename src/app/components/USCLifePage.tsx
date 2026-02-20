@@ -1,5 +1,5 @@
-import campusGatesImage from 'import someimage from '../assets/someassignment.png'8084a8306ae2e8c0d78ac2ac990f1914811e0108.png';
-import arenaImage from 'import someimage from '../assets/someassignment.png'221e4451f2eb1c2628c17d60546e60d99c28da47.png';
+import campusGatesImage from './assets/8084a8306ae2e8c0d78ac2ac990f1914811e0108.png';
+import arenaImage from './assets/221e4451f2eb1c2628c17d60546e60d99c28da47.png';
 
 export function USCLifePage() {
   return (

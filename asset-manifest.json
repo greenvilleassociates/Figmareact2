@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/GreenLicenseManager/static/css/main.jsa46f6ade.css",
+    "main.js": "/GreenLicenseManager/static/js/main.js2b0c933d.js",
+    "index.html": "/GreenLicenseManager/index.html",
+    "main.a46f6ade.css.map": "/GreenLicenseManager/static/css/main.jsa46f6ade.css.map",
+    "main.2b0c933d.js.map": "/GreenLicenseManager/static/js/main.js2b0c933d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a46f6ade.css",
+    "static/js/main.2b0c933d.js"
+  ]
+}

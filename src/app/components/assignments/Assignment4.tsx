@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
-import someimage from './someassignment.png';
+import someimage from '../assets/someassignment.png';
 
 export function Assignment4() {
   return (

@@ -1,4 +1,5 @@
-import assignmentImage './assets/someassignment.png';
+import img from '../assets/my-image.png'
+import assignmentImage from '/assets/someassignment.png';
 import { Link } from 'react-router';
 
 export function AssignmentsPage() {

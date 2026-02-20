@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
-import assignmentImage from './someassignment.png';
+import assignmentImage from './someassignment.jpg';
 export function Assignment1() {
   return (
     <div className="flex-1 bg-white flex flex-col">

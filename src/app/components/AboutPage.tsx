@@ -1,4 +1,4 @@
-import profileImage from 'import someimage from '../assets/someassignment.png'dbd3e43c51c524728c9f3b4ba5ae5183ce3da707.png';
+import profileImage from './assets/dbd3e43c51c524728c9f3b4ba5ae5183ce3da707.png';
 
 export function AboutPage() {
   return (
