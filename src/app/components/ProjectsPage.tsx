@@ -1,4 +1,4 @@
-import assignmentImage from '../assets/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
+import assignmentImage from './assets/someassignment.png';
 
 export function ProjectsPage() {
   const phases = [
