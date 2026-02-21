@@ -7,8 +7,8 @@
     "@babel/plugin-transform-react-jsx": "^7.28.6",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.7",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
     "@popperjs/core": "^2.11.8",
     "@tailwindcss/vite": "^4.2.0",
     "@testing-library/dom": "^10.4.1",
@@ -16,10 +16,10 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.0.10",
+    "@types/node": "^25.3.0",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
-    "axios": "^1.13.3",
+    "axios": "^1.13.5",
     "bootstrap": "^5.3.8",
     "classnames": "^2.5.1",
     "gh-pages": "^6.3.0",
@@ -28,7 +28,7 @@
     "lucide-react": "^0.575.0",
     "material-symbols": "^0.40.2",
     "nvm": "^0.0.4",
-    "react": "^19.2.3",
+    "react": "^19.2.4",
     "react-native": "^0.84.0",
     "react-native-paper": "^5.15.0",
     "react-native-safe-area-context": "^5.6.2",
@@ -40,7 +40,8 @@
     "tailwind": "^4.0.0",
     "vite": "^7.3.1",
     "web-vitals": "^5.1.0",
-    "yarn": "^1.22.22"
+    "yarn": "^1.22.22",
+    "yarn-upgrade-all": "^0.7.5"
   },
   "scripts": {
     "vitebuild": "vite build",
@@ -70,14 +71,14 @@
     ]
   },
   "devDependencies": {
-    "@babel/core": "^7",
-    "@types/react": "^19.2.9",
+    "@babel/core": "^7.29.0",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
-    "eslint": "^8",
+    "@vitejs/plugin-react": "^5.1.4",
+    "eslint": "^10.0.1",
     "eslint-config-react-app": "^7.0.1",
-    "react-dom": "^19.2.3",
-    "typescript": "5.9.3",
-    "vitest": "^4.0.15"
+    "react-dom": "^19.2.4",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }
