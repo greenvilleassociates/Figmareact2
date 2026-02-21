@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { User, Heart, Briefcase, GraduationCap, FileText, Building2 } from 'lucide-react';
+import './styles/themes.css';
 
 export function PersonalPagesContent() {
   const personalPages = [

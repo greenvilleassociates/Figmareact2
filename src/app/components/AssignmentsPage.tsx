@@ -1,6 +1,7 @@
 import img from '../assets/my-image.png'
 import assignmentImage from './assets/someassignment.png';
 import { Link } from 'react-router';
+import './styles/themes.css';
 
 export function AssignmentsPage() {
   const assignments = [

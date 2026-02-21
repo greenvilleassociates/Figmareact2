@@ -1,3 +1,5 @@
+import './styles/themes.css';
+
 interface ProjectLink {
   label: string;
   url: string;

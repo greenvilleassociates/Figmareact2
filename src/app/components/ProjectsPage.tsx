@@ -1,4 +1,5 @@
 import assignmentImage from './assets/someassignment.png';
+import './styles/themes.css';
 
 export function ProjectsPage() {
   const phases = [

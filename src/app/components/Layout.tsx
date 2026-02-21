@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router';
 import { Sidebar } from '@/app/components/Sidebar';
+import './styles/themes.css';
 
 export function Layout() {
   return (

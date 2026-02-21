@@ -1,3 +1,5 @@
+import './styles/themes.css';
+
 export function PersonalPages() {
   const pages = [
     {
