@@ -1,5 +1,3 @@
-import './styles/themes.css';
-
 export function VitaePage() {
   return (
     <div className="flex-1 bg-white flex flex-col">

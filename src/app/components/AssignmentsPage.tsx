@@ -1,7 +1,5 @@
-import img from '../assets/my-image.png'
-import assignmentImage from './assets/someassignment.png';
+import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
 import { Link } from 'react-router';
-import './styles/themes.css';
 
 export function AssignmentsPage() {
   const assignments = [

@@ -1,20 +1,40 @@
-import './styles/themes.css';
+import { useState, useEffect } from 'react';
+
+interface GitHubConfig {
+  profileUrl: string;
+  repositoryUrl: string;
+  documentationUrl: string;
+}
 
 export function GithubPages() {
+  const [githubConfig, setGithubConfig] = useState<GitHubConfig>({
+    profileUrl: 'https://github.com/jssg33',
+    repositoryUrl: 'https://github.com/jssg33/usc242',
+    documentationUrl: 'https://jssg33.github.io/usc242'
+  });
+
+  // Load GitHub config from localStorage
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('githubConfig');
+    if (savedConfig) {
+      setGithubConfig(JSON.parse(savedConfig));
+    }
+  }, []);
+
   const githubLinks = [
     {
       label: 'GitHub Profile',
-      url: 'https://github.com/jssg33',
+      url: githubConfig.profileUrl,
       description: 'View all repositories and contributions'
     },
     {
       label: 'USC242 Repository',
-      url: 'https://github.com/jssg33/usc242',
+      url: githubConfig.repositoryUrl,
       description: 'USC242 project source code'
     },
     {
       label: 'Project Documentation',
-      url: 'https://jssg33.github.io/usc242',
+      url: githubConfig.documentationUrl,
       description: 'Technical documentation and guides'
     }
   ];
@@ -74,6 +94,9 @@ export function GithubPages() {
           </p>
           <p>
             <strong>Build Tool:</strong> GitHub Actions
+          </p>
+          <p>
+            <strong>Compiler:</strong> Vite
           </p>
         </div>
       </div>

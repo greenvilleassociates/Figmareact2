@@ -1,5 +1,3 @@
-import './styles/themes.css';
-
 export function PersonalPages() {
   const pages = [
     {
@@ -38,7 +36,7 @@ export function PersonalPages() {
     <div className="flex-1 bg-white p-12 overflow-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Personal Pages</h1>
+          <h1 className="text-4xl font-bold mb-2">MyLinks</h1>
           <p className="text-lg text-gray-600">
             Manage your personal content and pages
           </p>

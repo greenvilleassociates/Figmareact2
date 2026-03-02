@@ -1,11 +1,25 @@
-import { Home, Search, FileText, Github, BookOpen, FolderKanban } from 'lucide-react';
+import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
-import cockyLogo from './assets/someassignment.png';
-import renderLogo from './assets/someassignment.png';
-import './styles/themes.css';
+import { useState, useEffect } from 'react';
+import cockyLogo from 'figma:asset/126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
+import renderLogo from 'figma:asset/8e37ed4b08f466c006fba4657b07905dffc752dd.png';
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 export function Sidebar() {
   const location = useLocation();
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  
+  // Load current project from localStorage
+  useEffect(() => {
+    const savedProject = localStorage.getItem('currentProject');
+    if (savedProject) {
+      setCurrentProject(JSON.parse(savedProject));
+    }
+  }, []);
   
   const isActive = (path: string) => {
     if (path === '/') {
@@ -17,7 +31,7 @@ export function Sidebar() {
   const isRenderPage = location.pathname === '/render-react-info';
 
   return (
-    <div className="w-52 h-screen bg-[#8B3A3A] text-white flex flex-col">
+    <div className="w-52 h-screen bg-[#4CBB17] text-white flex flex-col">
       {/* Logo */}
       <div className="p-6 flex justify-center">
         <div className="bg-white rounded flex items-center justify-center w-[150px] h-[150px]">
@@ -70,7 +84,7 @@ export function Sidebar() {
                 }`}
               >
                 <FileText className="w-5 h-5" />
-                <span>Personal Pages</span>
+                <span>MyLinks</span>
               </Link>
             </li>
             <li>
@@ -97,6 +111,17 @@ export function Sidebar() {
             </li>
             <li>
               <Link 
+                to="/documents" 
+                className={`flex items-center gap-3 px-3 py-2 rounded ${
+                  isActive('/documents') ? 'bg-white text-black' : 'hover:bg-white/10'
+                }`}
+              >
+                <Files className="w-5 h-5" />
+                <span>Documents</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
                 to="/render-react-info" 
                 className={`flex items-center gap-3 px-3 py-2 rounded ${
                   isActive('/render-react-info') ? 'bg-white text-black' : 'hover:bg-white/10'
@@ -117,13 +142,27 @@ export function Sidebar() {
                 <span>Github Pages</span>
               </Link>
             </li>
+            <li>
+              <Link 
+                to="/settings" 
+                className={`flex items-center gap-3 px-3 py-2 rounded ${
+                  isActive('/settings') ? 'bg-white text-black' : 'hover:bg-white/10'
+                }`}
+              >
+                <Settings className="w-5 h-5" />
+                <span>Settings</span>
+              </Link>
+            </li>
           </ul>
         </div>
       </nav>
 
       {/* Footer */}
       <div className="p-6">
-        <p className="text-sm">USC242</p>
+        <p className="text-sm font-semibold">Fusion Project Manager</p>
+        {currentProject && (
+          <p className="text-xs mt-1 opacity-90">Project: {currentProject.name}</p>
+        )}
       </div>
     </div>
   );

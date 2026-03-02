@@ -1,5 +1,4 @@
-import profileImage from './assets/dbd3e43c51c524728c9f3b4ba5ae5183ce3da707.png';
-import './styles/themes.css';
+import profileImage from 'figma:asset/dbd3e43c51c524728c9f3b4ba5ae5183ce3da707.png';
 
 export function AboutPage() {
   return (

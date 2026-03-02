@@ -1,18 +1,18 @@
-import assignmentImage from './assets/someassignment.png';
-import './styles/themes.css';
+import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
+import { Link } from 'react-router';
 
 export function ProjectsPage() {
   const phases = [
-    { phase: 'Phase I', title: 'Project Initialization', status: 'Completed', image: assignmentImage },
-    { phase: 'Phase II', title: 'Requirements Gathering', status: 'Completed', image: assignmentImage },
-    { phase: 'Phase III', title: 'Design & Architecture', status: 'Completed', image: assignmentImage },
-    { phase: 'Phase IV', title: 'Frontend Development', status: 'Completed', image: assignmentImage },
-    { phase: 'Phase V', title: 'Backend Development', status: 'In Progress', image: assignmentImage },
-    { phase: 'Phase VI', title: 'Integration Testing', status: 'Pending', image: assignmentImage },
-    { phase: 'Phase VII', title: 'User Acceptance Testing', status: 'Pending', image: assignmentImage },
-    { phase: 'Phase VIII', title: 'Deployment Preparation', status: 'Pending', image: assignmentImage },
-    { phase: 'Phase IX', title: 'Production Deployment', status: 'Pending', image: assignmentImage },
-    { phase: 'Phase X', title: 'Maintenance & Support', status: 'Pending', image: assignmentImage },
+    { phase: 'Phase I', title: 'Project Initialization', status: 'Completed', image: assignmentImage, path: '/projects/1' },
+    { phase: 'Phase II', title: 'Requirements Gathering', status: 'Completed', image: assignmentImage, path: '/projects/2' },
+    { phase: 'Phase III', title: 'Design & Architecture', status: 'Completed', image: assignmentImage, path: '/projects/3' },
+    { phase: 'Phase IV', title: 'Frontend Development', status: 'Completed', image: assignmentImage, path: '/projects/4' },
+    { phase: 'Phase V', title: 'Backend Development', status: 'In Progress', image: assignmentImage, path: '/projects/5' },
+    { phase: 'Phase VI', title: 'Integration Testing', status: 'Pending', image: assignmentImage, path: '/projects/6' },
+    { phase: 'Phase VII', title: 'User Acceptance Testing', status: 'Pending', image: assignmentImage, path: '/projects/7' },
+    { phase: 'Phase VIII', title: 'Deployment Preparation', status: 'Pending', image: assignmentImage, path: '/projects/8' },
+    { phase: 'Phase IX', title: 'Production Deployment', status: 'Pending', image: assignmentImage, path: '/projects/9' },
+    { phase: 'Phase X', title: 'Maintenance & Support', status: 'Pending', image: assignmentImage, path: '/projects/10' },
   ];
 
   const getStatusColor = (status: string) => {
@@ -36,7 +36,11 @@ export function ProjectsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {phases.map((phase, index) => (
-            <div key={index} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+            <Link 
+              key={index} 
+              to={phase.path}
+              className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow"
+            >
               <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden flex items-center justify-center">
                 <img
                   src={phase.image}
@@ -51,7 +55,7 @@ export function ProjectsPage() {
                   {phase.status}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

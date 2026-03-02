@@ -1,8 +1,26 @@
 import { Link } from 'react-router';
 import { User, Heart, Briefcase, GraduationCap, FileText, Building2 } from 'lucide-react';
-import './styles/theme.css';
+import { useState, useEffect } from 'react';
+
+interface CustomLink {
+  id: string;
+  name: string;
+  url: string;
+  color: string;
+  icon: string;
+}
 
 export function PersonalPagesContent() {
+  const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
+
+  // Load custom links from localStorage
+  useEffect(() => {
+    const savedLinks = localStorage.getItem('customLinks');
+    if (savedLinks) {
+      setCustomLinks(JSON.parse(savedLinks));
+    }
+  }, []);
+
   const personalPages = [
     { 
       name: '@AboutMe', 
@@ -51,7 +69,7 @@ export function PersonalPagesContent() {
   return (
     <div className="flex-1 bg-gray-50 p-12 overflow-auto max-[999px]:text-[9pt]">
       <div>
-        <h1 className="text-3xl font-bold mb-1">Personal Pages</h1>
+        <h1 className="text-3xl font-bold mb-1">MyLinks</h1>
         <p className="text-gray-500 mb-6">Subheading</p>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
@@ -67,6 +85,20 @@ export function PersonalPagesContent() {
               </Link>
             );
           })}
+          
+          {/* Custom Links from Settings */}
+          {customLinks.map((link) => (
+            <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-center cursor-pointer group">
+              <div 
+                className="aspect-square rounded-lg shadow hover:shadow-lg transition-all overflow-hidden mb-3 flex items-center justify-center text-4xl"
+                style={{ backgroundColor: link.color }}
+              >
+                {link.icon}
+              </div>
+              <h4 className="font-semibold text-sm mb-1 group-hover:text-blue-600 transition-colors">{link.name}</h4>
+              <p className="text-xs text-gray-600">Custom Link</p>
+            </a>
+          ))}
         </div>
       </div>
     </div>
