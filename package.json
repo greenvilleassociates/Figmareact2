@@ -1,7 +1,7 @@
 {
-  "name": "Greenville Project Manager",
+  "name": "Greenville-Project-Manager",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -60,7 +60,7 @@
     "react-dom": "^19.2.4",
     "react-hook-form": "7.71.2",
     "react-is": "^19.2.4",
-    "react-popper": "^2.3.0",
+    "react-popper": "2.3.0",
     "react-resizable-panels": "4.7.0",
     "react-responsive-masonry": "2.7.1",
     "react-router": "^7.13.0",
