@@ -1,8 +1,8 @@
 import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
-import cockyLogo from 'figma:asset/126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
-import renderLogo from 'figma:asset/8e37ed4b08f466c006fba4657b07905dffc752dd.png';
+import cockyLogo from './assets//126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
+import renderLogo from './assets//8e37ed4b08f466c006fba4657b07905dffc752dd.png';
 
 interface Project {
   id: string;
