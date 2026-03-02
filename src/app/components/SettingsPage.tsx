@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Github, FolderKanban, LogIn, LogOut } from 'lucide-react';
+import { Settings, Plus, Trash2, Github, FolderKanban, LogIn, LogOut, Image } from 'lucide-react';
 
 interface CustomLink {
   id: string;
@@ -21,6 +21,16 @@ interface Project {
   githubConfig: GitHubConfig;
 }
 
+interface AssignmentImage {
+  id: number;
+  imageUrl: string;
+}
+
+interface ProjectImage {
+  id: number;
+  imageUrl: string;
+}
+
 export function SettingsPage() {
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [newLink, setNewLink] = useState({ name: '', url: '', color: '#4CBB17', icon: '🔗' });
@@ -33,6 +43,8 @@ export function SettingsPage() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [assignmentImages, setAssignmentImages] = useState<AssignmentImage[]>([]);
+  const [projectImages, setProjectImages] = useState<ProjectImage[]>([]);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -41,12 +53,38 @@ export function SettingsPage() {
     const savedProjects = localStorage.getItem('projects');
     const savedCurrentProject = localStorage.getItem('currentProject');
     const savedLoginStatus = localStorage.getItem('isLoggedIn');
+    const savedAssignmentImages = localStorage.getItem('assignmentImages');
+    const savedProjectImages = localStorage.getItem('projectImages');
 
     if (savedLinks) setCustomLinks(JSON.parse(savedLinks));
     if (savedGithubConfig) setGithubConfig(JSON.parse(savedGithubConfig));
     if (savedProjects) setProjects(JSON.parse(savedProjects));
     if (savedCurrentProject) setCurrentProject(JSON.parse(savedCurrentProject));
     if (savedLoginStatus) setIsLoggedIn(JSON.parse(savedLoginStatus));
+    if (savedAssignmentImages) setAssignmentImages(JSON.parse(savedAssignmentImages));
+    if (savedProjectImages) setProjectImages(JSON.parse(savedProjectImages));
+  }, []);
+
+  // Listen for login status changes
+  useEffect(() => {
+    const handleLoginStatusChange = () => {
+      const savedLoginStatus = localStorage.getItem('isLoggedIn');
+      const savedCurrentProject = localStorage.getItem('currentProject');
+      if (savedLoginStatus) {
+        setIsLoggedIn(JSON.parse(savedLoginStatus));
+      }
+      if (savedCurrentProject) {
+        setCurrentProject(JSON.parse(savedCurrentProject));
+      } else {
+        setCurrentProject(null);
+      }
+    };
+
+    window.addEventListener('loginStatusChanged', handleLoginStatusChange);
+    
+    return () => {
+      window.removeEventListener('loginStatusChanged', handleLoginStatusChange);
+    };
   }, []);
 
   // Save custom links to localStorage
@@ -122,6 +160,38 @@ export function SettingsPage() {
       setCurrentProject(null);
       localStorage.removeItem('currentProject');
     }
+  };
+
+  // Update assignment image
+  const handleUpdateAssignmentImage = (id: number, imageUrl: string) => {
+    const existingIndex = assignmentImages.findIndex(img => img.id === id);
+    let updatedImages;
+    
+    if (existingIndex >= 0) {
+      updatedImages = [...assignmentImages];
+      updatedImages[existingIndex] = { id, imageUrl };
+    } else {
+      updatedImages = [...assignmentImages, { id, imageUrl }];
+    }
+    
+    setAssignmentImages(updatedImages);
+    localStorage.setItem('assignmentImages', JSON.stringify(updatedImages));
+  };
+
+  // Update project image
+  const handleUpdateProjectImage = (id: number, imageUrl: string) => {
+    const existingIndex = projectImages.findIndex(img => img.id === id);
+    let updatedImages;
+    
+    if (existingIndex >= 0) {
+      updatedImages = [...projectImages];
+      updatedImages[existingIndex] = { id, imageUrl };
+    } else {
+      updatedImages = [...projectImages, { id, imageUrl }];
+    }
+    
+    setProjectImages(updatedImages);
+    localStorage.setItem('projectImages', JSON.stringify(updatedImages));
   };
 
   // Login/Logout
@@ -302,7 +372,7 @@ export function SettingsPage() {
         </div>
 
         {/* Custom Links for MyLinks Page */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
             <Plus className="w-6 h-6 text-[#4CBB17]" />
             Manage MyLinks
@@ -392,6 +462,82 @@ export function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Assignment Images */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+            <Image className="w-6 h-6 text-[#4CBB17]" />
+            Assignment Images
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">Customize images for each assignment (1-10)</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((id) => {
+              const currentImage = assignmentImages.find(img => img.id === id);
+              return (
+                <div key={id} className="p-4 border rounded">
+                  <label className="block text-sm font-medium mb-2">Assignment {id}</label>
+                  <input
+                    type="text"
+                    value={currentImage?.imageUrl || ''}
+                    onChange={(e) => handleUpdateAssignmentImage(id, e.target.value)}
+                    placeholder="Enter image URL"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17] text-sm"
+                  />
+                  {currentImage?.imageUrl && (
+                    <div className="mt-2">
+                      <img 
+                        src={currentImage.imageUrl} 
+                        alt={`Assignment ${id}`}
+                        className="w-full h-24 object-cover rounded"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Invalid+URL';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Project Images */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+            <Image className="w-6 h-6 text-[#4CBB17]" />
+            Project Phase Images
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">Customize images for each project phase (1-10)</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((id) => {
+              const currentImage = projectImages.find(img => img.id === id);
+              return (
+                <div key={id} className="p-4 border rounded">
+                  <label className="block text-sm font-medium mb-2">Phase {id}</label>
+                  <input
+                    type="text"
+                    value={currentImage?.imageUrl || ''}
+                    onChange={(e) => handleUpdateProjectImage(id, e.target.value)}
+                    placeholder="Enter image URL"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17] text-sm"
+                  />
+                  {currentImage?.imageUrl && (
+                    <div className="mt-2">
+                      <img 
+                        src={currentImage.imageUrl} 
+                        alt={`Phase ${id}`}
+                        className="w-full h-24 object-cover rounded"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Invalid+URL';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings } from 'lucide-react';
+import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
 import cockyLogo from 'figma:asset/126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
@@ -12,14 +12,59 @@ interface Project {
 export function Sidebar() {
   const location = useLocation();
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
-  // Load current project from localStorage
+  // Load current project and login status from localStorage
   useEffect(() => {
     const savedProject = localStorage.getItem('currentProject');
+    const savedLoginStatus = localStorage.getItem('isLoggedIn');
     if (savedProject) {
       setCurrentProject(JSON.parse(savedProject));
     }
+    if (savedLoginStatus) {
+      setIsLoggedIn(JSON.parse(savedLoginStatus));
+    }
   }, []);
+
+  // Listen for storage changes to update login status
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedLoginStatus = localStorage.getItem('isLoggedIn');
+      const savedProject = localStorage.getItem('currentProject');
+      if (savedLoginStatus) {
+        setIsLoggedIn(JSON.parse(savedLoginStatus));
+      }
+      if (savedProject) {
+        setCurrentProject(JSON.parse(savedProject));
+      } else {
+        setCurrentProject(null);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for custom event for same-window updates
+    window.addEventListener('loginStatusChanged', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('loginStatusChanged', handleStorageChange);
+    };
+  }, []);
+
+  // Login/Logout handlers
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    localStorage.setItem('isLoggedIn', JSON.stringify(true));
+    window.dispatchEvent(new Event('loginStatusChanged'));
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentProject(null);
+    localStorage.setItem('isLoggedIn', JSON.stringify(false));
+    localStorage.removeItem('currentProject');
+    window.dispatchEvent(new Event('loginStatusChanged'));
+  };
   
   const isActive = (path: string) => {
     if (path === '/') {
@@ -31,7 +76,7 @@ export function Sidebar() {
   const isRenderPage = location.pathname === '/render-react-info';
 
   return (
-    <div className="w-52 h-screen bg-[#4CBB17] text-white flex flex-col">
+    <div className="h-screen bg-[#4CBB17] text-white flex flex-col" style={{ fontSize: '11pt', width: '248px' }}>
       {/* Logo */}
       <div className="p-6 flex justify-center">
         <div className="bg-white rounded flex items-center justify-center w-[150px] h-[150px]">
@@ -68,6 +113,25 @@ export function Sidebar() {
                 <Search className="w-5 h-5" />
                 <span>Browse</span>
               </a>
+            </li>
+            <li>
+              {!isLoggedIn ? (
+                <button
+                  onClick={handleLogin}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 text-left"
+                >
+                  <LogIn className="w-5 h-5" />
+                  <span>Login</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 text-left"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              )}
             </li>
           </ul>
         </div>
@@ -128,7 +192,7 @@ export function Sidebar() {
                 }`}
               >
                 <FileText className="w-5 h-5" />
-                <span>Render Hosting</span>
+                <span>Hosting Information</span>
               </Link>
             </li>
             <li>

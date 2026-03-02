@@ -1,18 +1,39 @@
 import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
 import { Link } from 'react-router';
+import { useState, useEffect } from 'react';
+
+interface ProjectImage {
+  id: number;
+  imageUrl: string;
+}
 
 export function ProjectsPage() {
+  const [customImages, setCustomImages] = useState<ProjectImage[]>([]);
+
+  // Load custom images from localStorage
+  useEffect(() => {
+    const savedImages = localStorage.getItem('projectImages');
+    if (savedImages) {
+      setCustomImages(JSON.parse(savedImages));
+    }
+  }, []);
+
+  const getImageForPhase = (id: number) => {
+    const customImage = customImages.find(img => img.id === id);
+    return customImage?.imageUrl || assignmentImage;
+  };
+
   const phases = [
-    { phase: 'Phase I', title: 'Project Initialization', status: 'Completed', image: assignmentImage, path: '/projects/1' },
-    { phase: 'Phase II', title: 'Requirements Gathering', status: 'Completed', image: assignmentImage, path: '/projects/2' },
-    { phase: 'Phase III', title: 'Design & Architecture', status: 'Completed', image: assignmentImage, path: '/projects/3' },
-    { phase: 'Phase IV', title: 'Frontend Development', status: 'Completed', image: assignmentImage, path: '/projects/4' },
-    { phase: 'Phase V', title: 'Backend Development', status: 'In Progress', image: assignmentImage, path: '/projects/5' },
-    { phase: 'Phase VI', title: 'Integration Testing', status: 'Pending', image: assignmentImage, path: '/projects/6' },
-    { phase: 'Phase VII', title: 'User Acceptance Testing', status: 'Pending', image: assignmentImage, path: '/projects/7' },
-    { phase: 'Phase VIII', title: 'Deployment Preparation', status: 'Pending', image: assignmentImage, path: '/projects/8' },
-    { phase: 'Phase IX', title: 'Production Deployment', status: 'Pending', image: assignmentImage, path: '/projects/9' },
-    { phase: 'Phase X', title: 'Maintenance & Support', status: 'Pending', image: assignmentImage, path: '/projects/10' },
+    { phase: 'Phase I', title: 'Project Initialization', status: 'Completed', image: getImageForPhase(1), path: '/projects/1' },
+    { phase: 'Phase II', title: 'Requirements Gathering', status: 'Completed', image: getImageForPhase(2), path: '/projects/2' },
+    { phase: 'Phase III', title: 'Design & Architecture', status: 'Completed', image: getImageForPhase(3), path: '/projects/3' },
+    { phase: 'Phase IV', title: 'Frontend Development', status: 'Completed', image: getImageForPhase(4), path: '/projects/4' },
+    { phase: 'Phase V', title: 'Backend Development', status: 'In Progress', image: getImageForPhase(5), path: '/projects/5' },
+    { phase: 'Phase VI', title: 'Integration Testing', status: 'Pending', image: getImageForPhase(6), path: '/projects/6' },
+    { phase: 'Phase VII', title: 'User Acceptance Testing', status: 'Pending', image: getImageForPhase(7), path: '/projects/7' },
+    { phase: 'Phase VIII', title: 'Deployment Preparation', status: 'Pending', image: getImageForPhase(8), path: '/projects/8' },
+    { phase: 'Phase IX', title: 'Production Deployment', status: 'Pending', image: getImageForPhase(9), path: '/projects/9' },
+    { phase: 'Phase X', title: 'Maintenance & Support', status: 'Pending', image: getImageForPhase(10), path: '/projects/10' },
   ];
 
   const getStatusColor = (status: string) => {

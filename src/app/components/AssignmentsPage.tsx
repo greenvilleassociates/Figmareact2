@@ -1,14 +1,35 @@
 import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
 import { Link } from 'react-router';
+import { useState, useEffect } from 'react';
+
+interface AssignmentImage {
+  id: number;
+  imageUrl: string;
+}
 
 export function AssignmentsPage() {
+  const [customImages, setCustomImages] = useState<AssignmentImage[]>([]);
+
+  // Load custom images from localStorage
+  useEffect(() => {
+    const savedImages = localStorage.getItem('assignmentImages');
+    if (savedImages) {
+      setCustomImages(JSON.parse(savedImages));
+    }
+  }, []);
+
+  const getImageForAssignment = (id: number) => {
+    const customImage = customImages.find(img => img.id === id);
+    return customImage?.imageUrl || assignmentImage;
+  };
+
   const assignments = [
     {
       id: 1,
       title: 'Assignment 1',
       subtitle: 'Basic HTML Structure',
       description: 'Introduction to HTML fundamentals and page structure',
-      image: assignmentImage,
+      image: getImageForAssignment(1),
       path: '/assignments/1'
     },
     {
@@ -16,7 +37,7 @@ export function AssignmentsPage() {
       title: 'Assignment 2',
       subtitle: 'CSS Styling Basics',
       description: 'Learning CSS selectors, properties, and layout',
-      image: assignmentImage,
+      image: getImageForAssignment(2),
       path: '/assignments/2'
     },
     {
@@ -24,7 +45,7 @@ export function AssignmentsPage() {
       title: 'Assignment 3',
       subtitle: 'Flexbox Layout',
       description: 'Mastering flexbox for responsive layouts',
-      image: assignmentImage,
+      image: getImageForAssignment(3),
       path: '/assignments/3'
     },
     {
@@ -32,7 +53,7 @@ export function AssignmentsPage() {
       title: 'Assignment 4',
       subtitle: 'JavaScript Fundamentals',
       description: 'Introduction to JavaScript programming',
-      image: assignmentImage,
+      image: getImageForAssignment(4),
       path: '/assignments/4'
     },
     {
@@ -40,7 +61,7 @@ export function AssignmentsPage() {
       title: 'Assignment 5',
       subtitle: 'DOM Manipulation',
       description: 'Working with the Document Object Model',
-      image: assignmentImage,
+      image: getImageForAssignment(5),
       path: '/assignments/5'
     },
     {
@@ -48,7 +69,7 @@ export function AssignmentsPage() {
       title: 'Assignment 6',
       subtitle: 'Event Handling',
       description: 'Interactive web pages with JavaScript events',
-      image: assignmentImage,
+      image: getImageForAssignment(6),
       path: '/assignments/6'
     },
     {
@@ -56,7 +77,7 @@ export function AssignmentsPage() {
       title: 'Assignment 7',
       subtitle: 'Form Validation',
       description: 'Client-side form validation techniques',
-      image: assignmentImage,
+      image: getImageForAssignment(7),
       path: '/assignments/7'
     },
     {
@@ -64,7 +85,7 @@ export function AssignmentsPage() {
       title: 'Assignment 8',
       subtitle: 'API Integration',
       description: 'Fetching and displaying data from external APIs',
-      image: assignmentImage,
+      image: getImageForAssignment(8),
       path: '/assignments/8'
     },
     {
@@ -72,7 +93,7 @@ export function AssignmentsPage() {
       title: 'Assignment 9',
       subtitle: 'Local Storage',
       description: 'Persistent data storage in the browser',
-      image: assignmentImage,
+      image: getImageForAssignment(9),
       path: '/assignments/9'
     },
     {
@@ -80,7 +101,7 @@ export function AssignmentsPage() {
       title: 'Assignment 10',
       subtitle: 'Final Project',
       description: 'Comprehensive web application project',
-      image: assignmentImage,
+      image: getImageForAssignment(10),
       path: '/assignments/10'
     },
   ];
