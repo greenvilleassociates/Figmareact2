@@ -1,8 +1,8 @@
 import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
-import cockyLogo from './assets//126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
-import renderLogo from './assets//8e37ed4b08f466c006fba4657b07905dffc752dd.png';
+import cockyLogo from 'figma:asset/126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
+import renderLogo from 'figma:asset/8e37ed4b08f466c006fba4657b07905dffc752dd.png';
 
 interface Project {
   id: string;
@@ -40,7 +40,8 @@ export function Sidebar() {
         setCurrentProject(null);
       }
     };
-    
+
+    // Listen for storage events from other windows
     window.addEventListener('storage', handleStorageChange);
     // Also listen for custom event for same-window updates
     window.addEventListener('loginStatusChanged', handleStorageChange);
@@ -51,18 +52,13 @@ export function Sidebar() {
     };
   }, []);
 
-  // Login/Logout handlers
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    localStorage.setItem('isLoggedIn', JSON.stringify(true));
-    window.dispatchEvent(new Event('loginStatusChanged'));
-  };
-
+  // Logout handler
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentProject(null);
     localStorage.setItem('isLoggedIn', JSON.stringify(false));
     localStorage.removeItem('currentProject');
+    localStorage.removeItem('currentUser');
     window.dispatchEvent(new Event('loginStatusChanged'));
   };
   
@@ -116,13 +112,13 @@ export function Sidebar() {
             </li>
             <li>
               {!isLoggedIn ? (
-                <button
-                  onClick={handleLogin}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 text-left"
+                <Link
+                  to="/login"
+                  className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10"
                 >
                   <LogIn className="w-5 h-5" />
                   <span>Login</span>
-                </button>
+                </Link>
               ) : (
                 <button
                   onClick={handleLogout}

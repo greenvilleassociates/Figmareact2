@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Github, FolderKanban, LogIn, LogOut, Image } from 'lucide-react';
+import { Settings, Plus, Trash2, Github, FolderKanban, Image, RefreshCw, Download, Upload } from 'lucide-react';
 
 interface CustomLink {
   id: string;
@@ -31,6 +31,30 @@ interface ProjectImage {
   imageUrl: string;
 }
 
+interface ProjectConfig {
+  projectid: string;
+  customerid: string;
+  userid: string;
+  accountid: string;
+  subaccountid: string;
+}
+
+interface AssignmentData {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  imageUrl: string;
+}
+
+interface ProjectPhaseData {
+  id: number;
+  phase: string;
+  title: string;
+  status: string;
+  imageUrl: string;
+}
+
 export function SettingsPage() {
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [newLink, setNewLink] = useState({ name: '', url: '', color: '#4CBB17', icon: '🔗' });
@@ -45,6 +69,22 @@ export function SettingsPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [assignmentImages, setAssignmentImages] = useState<AssignmentImage[]>([]);
   const [projectImages, setProjectImages] = useState<ProjectImage[]>([]);
+  const [projectConfig, setProjectConfig] = useState<ProjectConfig>({
+    projectid: '',
+    customerid: '',
+    userid: '',
+    accountid: '',
+    subaccountid: ''
+  });
+  const [assignmentData, setAssignmentData] = useState<AssignmentData[]>([]);
+  const [projectPhaseData, setProjectPhaseData] = useState<ProjectPhaseData[]>([]);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(1);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<number>(1);
+
+  // Generate random 8-digit number
+  const generateRandomId = () => {
+    return Math.floor(10000000 + Math.random() * 90000000).toString();
+  };
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -55,6 +95,7 @@ export function SettingsPage() {
     const savedLoginStatus = localStorage.getItem('isLoggedIn');
     const savedAssignmentImages = localStorage.getItem('assignmentImages');
     const savedProjectImages = localStorage.getItem('projectImages');
+    const savedProjectConfig = localStorage.getItem('project_config');
 
     if (savedLinks) setCustomLinks(JSON.parse(savedLinks));
     if (savedGithubConfig) setGithubConfig(JSON.parse(savedGithubConfig));
@@ -63,6 +104,12 @@ export function SettingsPage() {
     if (savedLoginStatus) setIsLoggedIn(JSON.parse(savedLoginStatus));
     if (savedAssignmentImages) setAssignmentImages(JSON.parse(savedAssignmentImages));
     if (savedProjectImages) setProjectImages(JSON.parse(savedProjectImages));
+    if (savedProjectConfig) {
+      const config = JSON.parse(savedProjectConfig);
+      setProjectConfig(config);
+      loadAssignmentData(config.projectid);
+      loadProjectPhaseData(config.projectid);
+    }
   }, []);
 
   // Listen for login status changes
@@ -207,45 +254,156 @@ export function SettingsPage() {
     localStorage.removeItem('currentProject');
   };
 
+  // Generate new project configuration
+  const handleGenerateProjectConfig = () => {
+    const newConfig: ProjectConfig = {
+      projectid: generateRandomId(),
+      customerid: generateRandomId(),
+      userid: generateRandomId(),
+      accountid: generateRandomId(),
+      subaccountid: generateRandomId()
+    };
+    setProjectConfig(newConfig);
+    localStorage.setItem('project_config', JSON.stringify(newConfig));
+    
+    // Initialize default assignment data
+    initializeAssignmentData(newConfig.projectid);
+    // Initialize default project phase data
+    initializeProjectPhaseData(newConfig.projectid);
+  };
+
+  // Initialize assignment data with defaults
+  const initializeAssignmentData = (projectid: string) => {
+    const defaultAssignments: AssignmentData[] = [];
+    for (let i = 1; i <= 20; i++) {
+      const assignment: AssignmentData = {
+        id: i,
+        title: `Assignment ${i}`,
+        subtitle: `Subtitle for Assignment ${i}`,
+        description: `Description for Assignment ${i}`,
+        imageUrl: `https://via.placeholder.com/400x300?text=Assignment+${i}`
+      };
+      defaultAssignments.push(assignment);
+      localStorage.setItem(`assignment_${projectid}_${i}`, JSON.stringify(assignment));
+    }
+    setAssignmentData(defaultAssignments);
+  };
+
+  // Initialize project phase data with defaults
+  const initializeProjectPhaseData = (projectid: string) => {
+    const defaultPhases: ProjectPhaseData[] = [];
+    const statuses = ['Completed', 'Completed', 'Completed', 'Completed', 'In Progress', 'Pending', 'Pending', 'Pending', 'Pending', 'Pending'];
+    for (let i = 1; i <= 10; i++) {
+      const phase: ProjectPhaseData = {
+        id: i,
+        phase: `Phase ${toRoman(i)}`,
+        title: `Phase ${i} Title`,
+        status: statuses[i - 1],
+        imageUrl: `https://via.placeholder.com/400x300?text=Phase+${i}`
+      };
+      defaultPhases.push(phase);
+      localStorage.setItem(`project_phase_${projectid}_${i}`, JSON.stringify(phase));
+    }
+    setProjectPhaseData(defaultPhases);
+  };
+
+  // Helper function to convert numbers to Roman numerals
+  const toRoman = (num: number): string => {
+    const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    return romanNumerals[num - 1] || num.toString();
+  };
+
+  // Load assignment data
+  const loadAssignmentData = (projectid: string) => {
+    const assignments: AssignmentData[] = [];
+    for (let i = 1; i <= 20; i++) {
+      const saved = localStorage.getItem(`assignment_${projectid}_${i}`);
+      if (saved) {
+        assignments.push(JSON.parse(saved));
+      }
+    }
+    setAssignmentData(assignments);
+  };
+
+  // Load project phase data
+  const loadProjectPhaseData = (projectid: string) => {
+    const phases: ProjectPhaseData[] = [];
+    for (let i = 1; i <= 10; i++) {
+      const saved = localStorage.getItem(`project_phase_${projectid}_${i}`);
+      if (saved) {
+        phases.push(JSON.parse(saved));
+      }
+    }
+    setProjectPhaseData(phases);
+  };
+
+  // Update assignment data
+  const handleUpdateAssignmentData = (id: number, field: keyof AssignmentData, value: string) => {
+    const assignment = assignmentData.find(a => a.id === id);
+    if (assignment && projectConfig.projectid) {
+      const updated = { ...assignment, [field]: value };
+      const updatedData = assignmentData.map(a => a.id === id ? updated : a);
+      setAssignmentData(updatedData);
+      localStorage.setItem(`assignment_${projectConfig.projectid}_${id}`, JSON.stringify(updated));
+    }
+  };
+
+  // Update project phase data
+  const handleUpdateProjectPhaseData = (id: number, field: keyof ProjectPhaseData, value: string) => {
+    const phase = projectPhaseData.find(p => p.id === id);
+    if (phase && projectConfig.projectid) {
+      const updated = { ...phase, [field]: value };
+      const updatedData = projectPhaseData.map(p => p.id === id ? updated : p);
+      setProjectPhaseData(updatedData);
+      localStorage.setItem(`project_phase_${projectConfig.projectid}_${id}`, JSON.stringify(updated));
+    }
+  };
+
+  // Export project configuration as JSON
+  const handleExportProjectConfig = () => {
+    const dataStr = JSON.stringify(projectConfig, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'project.json';
+    link.click();
+  };
+
+  // Export assignment JSON
+  const handleExportAssignmentJSON = (id: number) => {
+    const assignment = assignmentData.find(a => a.id === id);
+    if (assignment && projectConfig.projectid) {
+      const dataStr = JSON.stringify(assignment, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${projectConfig.projectid}a${id}.json`;
+      link.click();
+    }
+  };
+
+  // Export project phase JSON
+  const handleExportProjectPhaseJSON = (id: number) => {
+    const phase = projectPhaseData.find(p => p.id === id);
+    if (phase && projectConfig.projectid) {
+      const dataStr = JSON.stringify(phase, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${projectConfig.projectid}p${id}.json`;
+      link.click();
+    }
+  };
+
   return (
     <div className="flex-1 bg-gray-50 p-12 overflow-auto max-[999px]:text-[9pt]">
       <div className="max-w-4xl">
         <div className="flex items-center gap-3 mb-8">
           <Settings className="w-8 h-8 text-[#4CBB17]" />
           <h1 className="text-4xl font-bold">Settings</h1>
-        </div>
-
-        {/* Login Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-            <LogIn className="w-6 h-6 text-[#4CBB17]" />
-            Authentication
-          </h2>
-          <div className="flex items-center gap-4">
-            {!isLoggedIn ? (
-              <button
-                onClick={handleLogin}
-                className="px-6 py-2 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center gap-2"
-              >
-                <LogIn className="w-4 h-4" />
-                Login
-              </button>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Logged In
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </>
-            )}
-          </div>
         </div>
 
         {/* Project Manager Section */}
@@ -539,6 +697,294 @@ export function SettingsPage() {
             })}
           </div>
         </div>
+
+        {/* Project Configuration JSON */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+            <RefreshCw className="w-6 h-6 text-[#4CBB17]" />
+            Project Configuration (project.json)
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">Generate and manage project configuration with random 8-digit IDs</p>
+          
+          {!projectConfig.projectid ? (
+            <button
+              onClick={handleGenerateProjectConfig}
+              className="w-full px-6 py-3 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-5 h-5" />
+              Generate New Project Configuration
+            </button>
+          ) : (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Project ID</label>
+                  <input
+                    type="text"
+                    value={projectConfig.projectid}
+                    readOnly
+                    className="w-full px-4 py-2 border rounded bg-gray-50 font-mono text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Customer ID</label>
+                  <input
+                    type="text"
+                    value={projectConfig.customerid}
+                    readOnly
+                    className="w-full px-4 py-2 border rounded bg-gray-50 font-mono text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">User ID</label>
+                  <input
+                    type="text"
+                    value={projectConfig.userid}
+                    readOnly
+                    className="w-full px-4 py-2 border rounded bg-gray-50 font-mono text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Account ID</label>
+                  <input
+                    type="text"
+                    value={projectConfig.accountid}
+                    readOnly
+                    className="w-full px-4 py-2 border rounded bg-gray-50 font-mono text-sm"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">Sub Account ID</label>
+                  <input
+                    type="text"
+                    value={projectConfig.subaccountid}
+                    readOnly
+                    className="w-full px-4 py-2 border rounded bg-gray-50 font-mono text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportProjectConfig}
+                  className="flex-1 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export project.json
+                </button>
+                <button
+                  onClick={handleGenerateProjectConfig}
+                  className="flex-1 px-6 py-2 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Regenerate IDs
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Assignment JSON Management */}
+        {projectConfig.projectid && assignmentData.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+              <Download className="w-6 h-6 text-[#4CBB17]" />
+              Assignment JSON Files ({projectConfig.projectid}a1-a20.json)
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">Manage assignment data (up to 20 assignments)</p>
+            
+            {/* Assignment Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">Select Assignment to Edit</label>
+              <select
+                value={selectedAssignmentId}
+                onChange={(e) => setSelectedAssignmentId(Number(e.target.value))}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+              >
+                {assignmentData.map(a => (
+                  <option key={a.id} value={a.id}>Assignment {a.id}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Assignment Editor */}
+            {assignmentData.find(a => a.id === selectedAssignmentId) && (
+              <div className="space-y-4 mb-4 p-4 border rounded bg-gray-50">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Title</label>
+                  <input
+                    type="text"
+                    value={assignmentData.find(a => a.id === selectedAssignmentId)?.title || ''}
+                    onChange={(e) => handleUpdateAssignmentData(selectedAssignmentId, 'title', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Subtitle</label>
+                  <input
+                    type="text"
+                    value={assignmentData.find(a => a.id === selectedAssignmentId)?.subtitle || ''}
+                    onChange={(e) => handleUpdateAssignmentData(selectedAssignmentId, 'subtitle', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <textarea
+                    value={assignmentData.find(a => a.id === selectedAssignmentId)?.description || ''}
+                    onChange={(e) => handleUpdateAssignmentData(selectedAssignmentId, 'description', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Image URL</label>
+                  <input
+                    type="text"
+                    value={assignmentData.find(a => a.id === selectedAssignmentId)?.imageUrl || ''}
+                    onChange={(e) => handleUpdateAssignmentData(selectedAssignmentId, 'imageUrl', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                  {assignmentData.find(a => a.id === selectedAssignmentId)?.imageUrl && (
+                    <img 
+                      src={assignmentData.find(a => a.id === selectedAssignmentId)?.imageUrl} 
+                      alt="Preview"
+                      className="mt-2 w-full h-32 object-cover rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Invalid+URL';
+                      }}
+                    />
+                  )}
+                </div>
+                <button
+                  onClick={() => handleExportAssignmentJSON(selectedAssignmentId)}
+                  className="w-full px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export {projectConfig.projectid}a{selectedAssignmentId}.json
+                </button>
+              </div>
+            )}
+
+            {/* Quick Export All */}
+            <div className="mt-4 p-4 border rounded bg-blue-50">
+              <p className="text-sm font-medium mb-2">Quick Actions</p>
+              <div className="flex gap-2 flex-wrap">
+                {assignmentData.slice(0, 10).map(a => (
+                  <button
+                    key={a.id}
+                    onClick={() => handleExportAssignmentJSON(a.id)}
+                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+                  >
+                    a{a.id}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Project Phase JSON Management */}
+        {projectConfig.projectid && projectPhaseData.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+              <Download className="w-6 h-6 text-[#4CBB17]" />
+              Project Phase JSON Files ({projectConfig.projectid}p1-p10.json)
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">Manage project phase data (10 phases)</p>
+            
+            {/* Phase Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">Select Phase to Edit</label>
+              <select
+                value={selectedPhaseId}
+                onChange={(e) => setSelectedPhaseId(Number(e.target.value))}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+              >
+                {projectPhaseData.map(p => (
+                  <option key={p.id} value={p.id}>{p.phase}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Phase Editor */}
+            {projectPhaseData.find(p => p.id === selectedPhaseId) && (
+              <div className="space-y-4 mb-4 p-4 border rounded bg-gray-50">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Phase Name</label>
+                  <input
+                    type="text"
+                    value={projectPhaseData.find(p => p.id === selectedPhaseId)?.phase || ''}
+                    onChange={(e) => handleUpdateProjectPhaseData(selectedPhaseId, 'phase', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Title</label>
+                  <input
+                    type="text"
+                    value={projectPhaseData.find(p => p.id === selectedPhaseId)?.title || ''}
+                    onChange={(e) => handleUpdateProjectPhaseData(selectedPhaseId, 'title', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Status</label>
+                  <select
+                    value={projectPhaseData.find(p => p.id === selectedPhaseId)?.status || ''}
+                    onChange={(e) => handleUpdateProjectPhaseData(selectedPhaseId, 'status', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  >
+                    <option value="Completed">Completed</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Pending">Pending</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Image URL</label>
+                  <input
+                    type="text"
+                    value={projectPhaseData.find(p => p.id === selectedPhaseId)?.imageUrl || ''}
+                    onChange={(e) => handleUpdateProjectPhaseData(selectedPhaseId, 'imageUrl', e.target.value)}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                  {projectPhaseData.find(p => p.id === selectedPhaseId)?.imageUrl && (
+                    <img 
+                      src={projectPhaseData.find(p => p.id === selectedPhaseId)?.imageUrl} 
+                      alt="Preview"
+                      className="mt-2 w-full h-32 object-cover rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Invalid+URL';
+                      }}
+                    />
+                  )}
+                </div>
+                <button
+                  onClick={() => handleExportProjectPhaseJSON(selectedPhaseId)}
+                  className="w-full px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export {projectConfig.projectid}p{selectedPhaseId}.json
+                </button>
+              </div>
+            )}
+
+            {/* Quick Export All */}
+            <div className="mt-4 p-4 border rounded bg-blue-50">
+              <p className="text-sm font-medium mb-2">Quick Actions</p>
+              <div className="flex gap-2 flex-wrap">
+                {projectPhaseData.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => handleExportProjectPhaseJSON(p.id)}
+                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+                  >
+                    p{p.id}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

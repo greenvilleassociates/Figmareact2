@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
-import projectImage from './assets//a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
+import projectImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
 
 export function Phase3() {
   return (

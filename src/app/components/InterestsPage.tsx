@@ -1,4 +1,4 @@
-import golfImage from './assets//d8b89db27256015cfae3bbf286057420c99688d5.png';
+import golfImage from 'figma:asset/d8b89db27256015cfae3bbf286057420c99688d5.png';
 
 export function InterestsPage() {
   return (

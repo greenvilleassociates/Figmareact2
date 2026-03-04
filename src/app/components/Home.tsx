@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { User, Heart, Briefcase, GraduationCap, FileText, Building2 } from 'lucide-react';
-import GreenProjectManager from './assets/greenprojectmgr';
+
 export function Home() {
   const personalPages = [
     { 
@@ -49,7 +49,7 @@ export function Home() {
 
   return (
     <div className="flex-1 bg-gray-50 p-12 overflow-auto">
-      <h1 className="text-4xl font-bold mb-4">Welcome to Greenville Project Manager</h1>
+      <h1 className="text-4xl font-bold mb-4">Welcome to Render</h1>
       <p className="text-lg text-gray-600 mb-12">
         Explore your links and navigate through different sections using the sidebar.
       </p>

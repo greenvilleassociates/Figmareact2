@@ -35,6 +35,7 @@ import { Phase9 } from '@/app/components/projects/Phase9';
 import { Phase10 } from '@/app/components/projects/Phase10';
 import { DocumentsPage } from '@/app/components/DocumentsPage';
 import { SettingsPage } from '@/app/components/SettingsPage';
+import { LoginPage } from '@/app/components/LoginPage';
 
 export const router = createBrowserRouter([
   {
@@ -176,6 +177,10 @@ export const router = createBrowserRouter([
       {
         path: 'settings',
         Component: SettingsPage,
+      },
+      {
+        path: 'login',
+        Component: LoginPage,
       },
     ],
   },

@@ -1,4 +1,4 @@
-import assignmentImage from './assets//a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
+import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
 import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
 
@@ -7,23 +7,83 @@ interface ProjectImage {
   imageUrl: string;
 }
 
+interface ProjectPhaseData {
+  id: number;
+  phase: string;
+  title: string;
+  status: string;
+  imageUrl: string;
+}
+
 export function ProjectsPage() {
   const [customImages, setCustomImages] = useState<ProjectImage[]>([]);
+  const [projectPhaseData, setProjectPhaseData] = useState<ProjectPhaseData[]>([]);
+  const [projectId, setProjectId] = useState<string>('');
 
-  // Load custom images from localStorage
+  // Load custom images and project phase data from localStorage
   useEffect(() => {
     const savedImages = localStorage.getItem('projectImages');
+    const savedProjectConfig = localStorage.getItem('project_config');
+    
     if (savedImages) {
       setCustomImages(JSON.parse(savedImages));
     }
+    
+    if (savedProjectConfig) {
+      const config = JSON.parse(savedProjectConfig);
+      setProjectId(config.projectid);
+      loadProjectPhaseData(config.projectid);
+    }
   }, []);
 
-  const getImageForPhase = (id: number) => {
-    const customImage = customImages.find(img => img.id === id);
-    return customImage?.imageUrl || assignmentImage;
+  const loadProjectPhaseData = (projectid: string) => {
+    const phases: ProjectPhaseData[] = [];
+    // Load all 10 project phases
+    for (let i = 1; i <= 10; i++) {
+      const saved = localStorage.getItem(`project_phase_${projectid}_${i}`);
+      if (saved) {
+        phases.push(JSON.parse(saved));
+      } else {
+        // Fallback to default data if no JSON found
+        phases.push({
+          id: i,
+          phase: `Phase ${toRoman(i)}`,
+          title: `Phase ${i} Title`,
+          status: i <= 4 ? 'Completed' : i === 5 ? 'In Progress' : 'Pending',
+          imageUrl: assignmentImage
+        });
+      }
+    }
+    setProjectPhaseData(phases);
   };
 
-  const phases = [
+  const toRoman = (num: number): string => {
+    const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    return romanNumerals[num - 1] || num.toString();
+  };
+
+  const getImageForPhase = (id: number) => {
+    // Check if there's project phase data with image URL
+    const phase = projectPhaseData.find(p => p.id === id);
+    if (phase && phase.imageUrl) {
+      return phase.imageUrl;
+    }
+    
+    // Fallback to custom images
+    const customImage = customImages.find(img => img.id === id);
+    if (customImage?.imageUrl) {
+      return customImage.imageUrl;
+    }
+    
+    // Final fallback to default image
+    return assignmentImage;
+  };
+
+  // Use project phase data if available, otherwise use default
+  const phases = projectPhaseData.length > 0 ? projectPhaseData.map(p => ({
+    ...p,
+    path: `/projects/${p.id}`
+  })) : [
     { phase: 'Phase I', title: 'Project Initialization', status: 'Completed', image: getImageForPhase(1), path: '/projects/1' },
     { phase: 'Phase II', title: 'Requirements Gathering', status: 'Completed', image: getImageForPhase(2), path: '/projects/2' },
     { phase: 'Phase III', title: 'Design & Architecture', status: 'Completed', image: getImageForPhase(3), path: '/projects/3' },
@@ -64,7 +124,7 @@ export function ProjectsPage() {
             >
               <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden flex items-center justify-center">
                 <img
-                  src={phase.image}
+                  src={phase.imageUrl || phase.image}
                   alt={phase.phase}
                   className="rounded max-[999px]:w-[200px] max-[999px]:h-[200px] min-[1000px]:w-[400px] min-[1000px]:h-[400px] object-cover"
                 />
