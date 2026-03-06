@@ -410,7 +410,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
         {/* Footer */}
         <div className="p-4">
-          <p className="text-xs font-semibold mb-2">Fusion Project Manager 26.02</p>
+          <div className="text-center mb-3">
+            <p className="text-xs font-semibold mb-1">Fusion Project Manager 26.02</p>
+            <p className="text-xs opacity-75 italic">Perspectives Altered, Progress Achieved</p>
+          </div>
           
           {/* Project Selector Dropdown */}
           {isLoggedIn && userProjects.length > 0 && (

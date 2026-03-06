@@ -49,6 +49,8 @@ export function LoginPage() {
       // Fetch users from the API
       const response = await fetch('https://api242.onrender.com/users');
       
+      console.log("Response", response);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch users from the API');
       }
