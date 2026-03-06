@@ -19,6 +19,14 @@ interface Project {
   id: string;
   name: string;
   githubConfig: GitHubConfig;
+  instanceid?: string;
+  githubRepoUrl?: string;
+  githubPagesUrl?: string;
+  hostingProviderName?: string;
+  hostingProviderUrl?: string;
+  account?: string;
+  subaccount?: string;
+  companyid?: string;
 }
 
 interface AssignmentImage {
@@ -66,6 +74,17 @@ export function SettingsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectForm, setNewProjectForm] = useState({
+    name: '',
+    instanceid: '',
+    githubRepoUrl: '',
+    githubPagesUrl: '',
+    hostingProviderName: '',
+    hostingProviderUrl: '',
+    account: '',
+    subaccount: '',
+    companyid: ''
+  });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [assignmentImages, setAssignmentImages] = useState<AssignmentImage[]>([]);
   const [projectImages, setProjectImages] = useState<ProjectImage[]>([]);
@@ -176,17 +195,96 @@ export function SettingsPage() {
   };
 
   // Add new project
-  const handleAddProject = () => {
-    if (newProjectName) {
+  const handleAddProject = async () => {
+    if (!newProjectForm.name) {
+      alert('Project name is required!');
+      return;
+    }
+
+    try {
+      // Get current user from localStorage
+      const currentUser = localStorage.getItem('currentUser');
+      let userid = '';
+      
+      if (currentUser) {
+        const user = JSON.parse(currentUser);
+        // Use uid field from localStorage (which comes from API's userid)
+        userid = user.uid?.toString() || '';
+      }
+
+      // Prepare data for API
+      const apiData = {
+        userid,
+        instanceid: newProjectForm.instanceid,
+        projectname: newProjectForm.name,
+        projectid: newProjectForm.name, // projectid = name as specified
+        githubRepoUrl: newProjectForm.githubRepoUrl,
+        githubPagesUrl: newProjectForm.githubPagesUrl,
+        hostingProviderName: newProjectForm.hostingProviderName,
+        hostingProviderUrl: newProjectForm.hostingProviderUrl,
+        account: newProjectForm.account,
+        subaccount: newProjectForm.subaccount,
+        companyid: newProjectForm.companyid
+      };
+
+      // POST to API
+      const response = await fetch('https://api242.onrender.com/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(apiData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`Failed to save project to API: ${response.status} - ${errorText}`);
+      }
+
+      // If API call successful, save to localStorage
       const project: Project = {
         id: Date.now().toString(),
-        name: newProjectName,
-        githubConfig: { ...githubConfig }
+        name: newProjectForm.name,
+        githubConfig: {
+          profileUrl: githubConfig.profileUrl,
+          repositoryUrl: newProjectForm.githubRepoUrl || githubConfig.repositoryUrl,
+          documentationUrl: newProjectForm.githubPagesUrl || githubConfig.documentationUrl
+        },
+        instanceid: newProjectForm.instanceid,
+        githubRepoUrl: newProjectForm.githubRepoUrl,
+        githubPagesUrl: newProjectForm.githubPagesUrl,
+        hostingProviderName: newProjectForm.hostingProviderName,
+        hostingProviderUrl: newProjectForm.hostingProviderUrl,
+        account: newProjectForm.account,
+        subaccount: newProjectForm.subaccount,
+        companyid: newProjectForm.companyid
       };
+
       const updatedProjects = [...projects, project];
       setProjects(updatedProjects);
       localStorage.setItem('projects', JSON.stringify(updatedProjects));
-      setNewProjectName('');
+      
+      // Reset form
+      setNewProjectForm({
+        name: '',
+        instanceid: '',
+        githubRepoUrl: '',
+        githubPagesUrl: '',
+        hostingProviderName: '',
+        hostingProviderUrl: '',
+        account: '',
+        subaccount: '',
+        companyid: ''
+      });
+
+      // Trigger refresh in Sidebar
+      window.dispatchEvent(new Event('loginStatusChanged'));
+      
+      alert('Project created and saved to API successfully!');
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('Error creating project. Please try again.');
     }
   };
 
@@ -255,21 +353,85 @@ export function SettingsPage() {
   };
 
   // Generate new project configuration
-  const handleGenerateProjectConfig = () => {
-    const newConfig: ProjectConfig = {
-      projectid: generateRandomId(),
-      customerid: generateRandomId(),
-      userid: generateRandomId(),
-      accountid: generateRandomId(),
-      subaccountid: generateRandomId()
-    };
-    setProjectConfig(newConfig);
-    localStorage.setItem('project_config', JSON.stringify(newConfig));
-    
-    // Initialize default assignment data
-    initializeAssignmentData(newConfig.projectid);
-    // Initialize default project phase data
-    initializeProjectPhaseData(newConfig.projectid);
+  const handleGenerateProjectConfig = async () => {
+    try {
+      // Get current user from localStorage
+      const currentUser = localStorage.getItem('currentUser');
+      let loggedInUserId = '';
+      
+      if (currentUser) {
+        const user = JSON.parse(currentUser);
+        // Use uid field from localStorage (which comes from API's userid)
+        loggedInUserId = user.uid?.toString() || '';
+      }
+
+      if (!loggedInUserId) {
+        alert('You must be logged in to generate a project configuration.');
+        return;
+      }
+
+      // Generate random IDs for project configuration
+      const generatedProjectId = generateRandomId();
+      const generatedCustomerId = generateRandomId();
+      const generatedAccountId = generateRandomId();
+      const generatedSubAccountId = generateRandomId();
+
+      // Prepare data for API - create project shell with generated IDs (Method A pattern)
+      const apiData = {
+        userid: loggedInUserId, // Use actual logged-in user's userid
+        instanceid: generatedProjectId, // Use generated projectid as instanceid
+        projectname: `Project_${generatedProjectId}`, // Default name with the ID
+        projectid: generatedProjectId,
+        githubRepoUrl: currentProject?.githubRepoUrl || githubConfig.repositoryUrl || '',
+        githubPagesUrl: currentProject?.githubPagesUrl || githubConfig.documentationUrl || '',
+        hostingProviderName: currentProject?.hostingProviderName || '',
+        hostingProviderUrl: currentProject?.hostingProviderUrl || '',
+        account: generatedAccountId,
+        subaccount: generatedSubAccountId,
+        companyid: generatedCustomerId
+      };
+
+      // POST to API
+      const response = await fetch('https://api242.onrender.com/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(apiData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`Failed to save project configuration to API: ${response.status} - ${errorText}`);
+      }
+
+      // If API call successful, save configuration locally for JSON export purposes
+      // Note: userid stored here is the actual logged-in user's userid, not generated
+      const newConfig: ProjectConfig = {
+        projectid: generatedProjectId,
+        customerid: generatedCustomerId,
+        userid: loggedInUserId, // Store actual user's userid
+        accountid: generatedAccountId,
+        subaccountid: generatedSubAccountId
+      };
+
+      setProjectConfig(newConfig);
+      localStorage.setItem('project_config', JSON.stringify(newConfig));
+      
+      // Initialize default assignment data
+      initializeAssignmentData(newConfig.projectid);
+      // Initialize default project phase data
+      initializeProjectPhaseData(newConfig.projectid);
+      
+      // Trigger refresh in Sidebar to update projects list
+      window.dispatchEvent(new Event('loginStatusChanged'));
+      
+      alert('Project configuration generated and saved to API successfully!');
+    } catch (error) {
+      console.error('Error generating project configuration:', error);
+      alert('Error saving to API. Please try again or use manual project creation.');
+    }
   };
 
   // Initialize assignment data with defaults
@@ -422,22 +584,114 @@ export function SettingsPage() {
           )}
 
           {/* Add New Project */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Add New Project</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                placeholder="Project Name"
-                className="flex-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
-              />
+          <div className="mb-6 p-4 bg-gray-50 rounded">
+            <h3 className="font-semibold mb-4">Create New Project</h3>
+            <p className="text-sm text-gray-600 mb-4">All project data will be saved to the API at https://api242.onrender.com/projects</p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Project Name *</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.name}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, name: e.target.value })}
+                    placeholder="USC242"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Instance ID</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.instanceid}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, instanceid: e.target.value })}
+                    placeholder="inst-001"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">GitHub Repository URL</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.githubRepoUrl}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, githubRepoUrl: e.target.value })}
+                    placeholder="https://github.com/user/repo"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">GitHub Pages URL</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.githubPagesUrl}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, githubPagesUrl: e.target.value })}
+                    placeholder="https://user.github.io/repo"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Hosting Provider Name</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.hostingProviderName}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, hostingProviderName: e.target.value })}
+                    placeholder="Render, Vercel, etc."
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Hosting Provider URL</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.hostingProviderUrl}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, hostingProviderUrl: e.target.value })}
+                    placeholder="https://render.com/dashboard"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Account</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.account}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, account: e.target.value })}
+                    placeholder="account-name"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Sub Account</label>
+                  <input
+                    type="text"
+                    value={newProjectForm.subaccount}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, subaccount: e.target.value })}
+                    placeholder="sub-account-name"
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Company ID</label>
+                <input
+                  type="text"
+                  value={newProjectForm.companyid}
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, companyid: e.target.value })}
+                  placeholder="company-001"
+                  className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                />
+              </div>
               <button
                 onClick={handleAddProject}
-                className="px-4 py-2 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center gap-2"
+                className="w-full px-6 py-2 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center justify-center gap-2 font-semibold"
               >
                 <Plus className="w-4 h-4" />
-                Add
+                Create Project & Save to API
               </button>
             </div>
           </div>
@@ -704,16 +958,31 @@ export function SettingsPage() {
             <RefreshCw className="w-6 h-6 text-[#4CBB17]" />
             Project Configuration (project.json)
           </h2>
-          <p className="text-sm text-gray-600 mb-4">Generate and manage project configuration with random 8-digit IDs</p>
+          <p className="text-sm text-gray-600 mb-4">
+            Generate random 8-digit IDs and create a project shell in the API
+          </p>
           
           {!projectConfig.projectid ? (
-            <button
-              onClick={handleGenerateProjectConfig}
-              className="w-full px-6 py-3 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center justify-center gap-2"
-            >
-              <RefreshCw className="w-5 h-5" />
-              Generate New Project Configuration
-            </button>
+            <div>
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm text-blue-800">
+                  <strong>What happens when you generate:</strong>
+                </p>
+                <ul className="text-sm text-blue-700 mt-2 space-y-1 ml-4 list-disc">
+                  <li>Creates random 8-digit IDs for project, customer, user, account, and subaccount</li>
+                  <li>POSTs a project shell to <code className="bg-blue-100 px-1 rounded">https://api242.onrender.com/projects</code></li>
+                  <li>Initializes 20 assignment templates and 10 project phase templates</li>
+                  <li>Saves configuration locally for export and JSON generation</li>
+                </ul>
+              </div>
+              <button
+                onClick={handleGenerateProjectConfig}
+                className="w-full px-6 py-3 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Generate New Project Configuration & Save to API
+              </button>
+            </div>
           ) : (
             <div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

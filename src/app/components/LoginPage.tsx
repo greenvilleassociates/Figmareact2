@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
-import { LogIn, AlertCircle, Loader } from 'lucide-react';
+import { LogIn, AlertCircle, Loader, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
 interface User {
   id: number;
+  userid: number;
+  useridstring: string;
   username: string;
   plainpassword: string;
+  firstname?: string;
+  lastname?: string;
+  fullname?: string;
+  displayname?: string;
   email?: string;
   created_at?: string;
+  defaultinstanceid?: string;
+  defaultshardid?: string;
+  role?: string;
 }
 
 export function LoginPage() {
@@ -16,6 +25,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   // Check if already logged in
@@ -51,12 +61,13 @@ export function LoginPage() {
       );
 
       if (user) {
-        // Successful login
+        // Successful login - save specific user fields
         localStorage.setItem('isLoggedIn', JSON.stringify(true));
         localStorage.setItem('currentUser', JSON.stringify({
-          id: user.id,
+          uid: user.userid,
           username: user.username,
-          email: user.email
+          email: user.email,
+          role: user.role
         }));
         
         // Dispatch event for sidebar to update
@@ -168,15 +179,28 @@ export function LoginPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Enter your password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17] focus:border-transparent"
-                disabled={loading}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Enter your password"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17] focus:border-transparent"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
