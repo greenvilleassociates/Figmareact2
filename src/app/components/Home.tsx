@@ -1,7 +1,42 @@
 import { Link } from 'react-router';
-import { User, Heart, Briefcase, GraduationCap, FileText, Building2 } from 'lucide-react';
+import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const savedLoginStatus = localStorage.getItem('isLoggedIn');
+    const savedUser = localStorage.getItem('currentUser');
+    
+    if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
+      setIsLoggedIn(true);
+      if (savedUser) {
+        setCurrentUser(JSON.parse(savedUser));
+      }
+    }
+
+    // Listen for login status changes
+    const handleLoginChange = () => {
+      const savedLoginStatus = localStorage.getItem('isLoggedIn');
+      const savedUser = localStorage.getItem('currentUser');
+      
+      if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
+        setIsLoggedIn(true);
+        if (savedUser) {
+          setCurrentUser(JSON.parse(savedUser));
+        }
+      } else {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+      }
+    };
+
+    window.addEventListener('loginStatusChanged', handleLoginChange);
+    return () => window.removeEventListener('loginStatusChanged', handleLoginChange);
+  }, []);
+
   const personalPages = [
     { 
       name: 'About Me', 
@@ -49,12 +84,21 @@ export function Home() {
 
   return (
     <div className="flex-1 bg-gray-50 p-12 overflow-auto">
-      <h1 className="text-4xl font-bold mb-4">Welcome to Render</h1>
-      <p className="text-lg text-gray-600 mb-12">
-        Explore your links and navigate through different sections using the sidebar.
-      </p>
+      {/* Welcome Header */}
+      <div className="mb-12">
+        <h1 className="text-4xl font-bold mb-4">
+          {isLoggedIn && currentUser 
+            ? `Welcome back, ${currentUser.username}!` 
+            : 'Welcome to Fusion Project Manager 26.02'}
+        </h1>
+        <p className="text-lg text-gray-600">
+          {isLoggedIn 
+            ? 'Explore your links and navigate through different sections using the sidebar.' 
+            : 'Please log in to access project management features or register for visitor permissions.'}
+        </p>
+      </div>
 
-      {/* MyLinks Quick Access */}
+      {/* MyLinks Quick Access - Always visible */}
       <div className="mb-12">
         <h2 className="text-2xl font-semibold mb-6">MyLinks</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
@@ -79,8 +123,8 @@ export function Home() {
         </div>
       </div>
 
-      {/* Other Sections */}
-      <div>
+      {/* Quick Links */}
+      <div className="mb-12">
         <h2 className="text-2xl font-semibold mb-6">Quick Links</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link to="/assignments" className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
@@ -99,8 +143,98 @@ export function Home() {
             <h3 className="text-xl font-semibold mb-2">GitHub Pages</h3>
             <p className="text-gray-600">GitHub deployment information</p>
           </Link>
+          {isLoggedIn && (
+            <>
+              <Link to="/my-projects" className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold mb-2">My Projects</h3>
+                <p className="text-gray-600">View and manage all your projects</p>
+              </Link>
+              <Link to="/team" className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold mb-2">Team</h3>
+                <p className="text-gray-600">Manage your project team</p>
+              </Link>
+              <Link to="/milestones" className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold mb-2">Milestones</h3>
+                <p className="text-gray-600">Track project milestones</p>
+              </Link>
+              <Link to="/reports" className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold mb-2">Reports</h3>
+                <p className="text-gray-600">View project reports</p>
+              </Link>
+              <Link to="/releases" className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold mb-2">Releases</h3>
+                <p className="text-gray-600">Manage project releases</p>
+              </Link>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Visitor Links - Show if not logged in */}
+      {!isLoggedIn && (
+        <div className="bg-gradient-to-br from-[#4CBB17]/10 to-white rounded-xl border-2 border-[#4CBB17]/20 p-8">
+          <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+            <UserPlus className="w-6 h-6 text-[#4CBB17]" />
+            Visitor Links
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Register for Project Access */}
+            <div className="bg-white rounded-lg p-6 border-2 border-gray-200 hover:border-[#4CBB17] transition-all hover:shadow-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold">Request Project Access</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Register to request permissions to view a specific project. Once approved by the project owner, you'll have read-only access to view project details.
+              </p>
+              <Link
+                to="/visitor-register"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <UserPlus className="w-5 h-5" />
+                Register for Access
+              </Link>
+            </div>
+
+            {/* Fusion Project Manager Login */}
+            <div className="bg-white rounded-lg p-6 border-2 border-gray-200 hover:border-[#4CBB17] transition-all hover:shadow-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-[#4CBB17] rounded-lg flex items-center justify-center">
+                  <LogIn className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold">Project Manager Login</h3>
+              </div>
+              <p className="text-gray-600 mb-4">
+                Log in to access full project management features including editing, team management, milestones, and all administrative controls.
+              </p>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors"
+              >
+                <LogIn className="w-5 h-5" />
+                Login to Fusion PM
+              </Link>
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-1">About Access Levels</h4>
+                <p className="text-sm text-blue-800">
+                  <strong>Visitor Access:</strong> View-only permissions for specific projects after approval. 
+                  <strong className="ml-2">Manager Access:</strong> Full project management capabilities including editing, team management, and administrative features.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

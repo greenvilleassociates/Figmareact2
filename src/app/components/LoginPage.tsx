@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LogIn, AlertCircle, Loader, Eye, EyeOff } from 'lucide-react';
+import { LogIn, AlertCircle, Loader, Eye, EyeOff, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
 interface User {
@@ -146,10 +146,10 @@ export function LoginPage() {
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-[#4CBB17] rounded-full flex items-center justify-center mx-auto mb-4">
-              <LogIn className="w-8 h-8 text-white" />
+              <Lock className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Login</h1>
-            <p className="text-gray-600">Access Fusion Project Manager</p>
+            <p className="text-gray-600">Access Fusion Project Manager 26.02</p>
           </div>
 
           {error && (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Github, FolderKanban, Image, RefreshCw, Download, Upload } from 'lucide-react';
+import { Settings, Plus, Trash2, Github, FolderKanban, Image, RefreshCw, Download, Upload, Users, Edit2, Calendar, Palette } from 'lucide-react';
 
 interface CustomLink {
   id: string;
@@ -63,6 +63,28 @@ interface ProjectPhaseData {
   imageUrl: string;
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'developer' | 'project-manager' | 'stakeholder';
+  type?: string;
+}
+
+interface TeamData {
+  developers: TeamMember[];
+  projectManagers: TeamMember[];
+  stakeholders: TeamMember[];
+}
+
+interface Milestone {
+  id: string;
+  date: string;
+  description: string;
+  type: string;
+}
+
 export function SettingsPage() {
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [newLink, setNewLink] = useState({ name: '', url: '', color: '#4CBB17', icon: '🔗' });
@@ -99,10 +121,27 @@ export function SettingsPage() {
   const [projectPhaseData, setProjectPhaseData] = useState<ProjectPhaseData[]>([]);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number>(1);
   const [selectedPhaseId, setSelectedPhaseId] = useState<number>(1);
+  const [teamData, setTeamData] = useState<TeamData>({
+    developers: [],
+    projectManagers: [],
+    stakeholders: []
+  });
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [sidebarColor, setSidebarColor] = useState('#4CBB17');
 
   // Generate random 8-digit number
   const generateRandomId = () => {
     return Math.floor(10000000 + Math.random() * 90000000).toString();
+  };
+
+  // Save sidebar color
+  const handleSaveSidebarColor = (color: string) => {
+    if (projectConfig.projectid) {
+      setSidebarColor(color);
+      localStorage.setItem(`${projectConfig.projectid}_sidebarcolor`, color);
+      // Trigger sidebar update
+      window.dispatchEvent(new Event('storage'));
+    }
   };
 
   // Load settings from localStorage on mount
@@ -128,6 +167,14 @@ export function SettingsPage() {
       setProjectConfig(config);
       loadAssignmentData(config.projectid);
       loadProjectPhaseData(config.projectid);
+      loadTeamData(config.projectid);
+      loadMilestonesData(config.projectid);
+      
+      // Load sidebar color
+      const savedColor = localStorage.getItem(`${config.projectid}_sidebarcolor`);
+      if (savedColor) {
+        setSidebarColor(savedColor);
+      }
     }
   }, []);
 
@@ -264,6 +311,59 @@ export function SettingsPage() {
       const updatedProjects = [...projects, project];
       setProjects(updatedProjects);
       localStorage.setItem('projects', JSON.stringify(updatedProjects));
+      
+      // Initialize hosting_info JSON for new project
+      const defaultHostingInfo = [
+        {
+          name: 'Render',
+          links: [
+            {
+              label: 'API Detail',
+              url: 'HTTPS://USC242.ONRENDER.COM',
+              image: 'https://images.unsplash.com/photo-1695668548342-c0c1ad479aee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxBUEklMjBiYWNrZW5kJTIwc2VydmVyJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3Njk5ODIzMzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+              description: 'Backend API endpoints and server details'
+            },
+            {
+              label: 'API Swagger Documentation',
+              url: 'HTTPS://API242.ONRENDER.COM/SWAGGER',
+              image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxBUEklMjBkb2N1bWVudGF0aW9uJTIwc3dhZ2dlcnxlbnwxfHx8fDE3Njk5ODIzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080',
+              description: 'Interactive API documentation with Swagger'
+            },
+            {
+              label: 'React App Front Page',
+              url: 'HTTPS://REACT242-HO2O.ONRENDER.COM/INDEX.HTML',
+              image: 'https://images.unsplash.com/photo-1489436969537-cf0c1dc69cba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3ZWIlMjByb290JTIwaG9zdGluZyUyMHNlcnZlcnxlbnwxfHx8fDE3Njk5ODIzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080',
+              description: 'Main React application frontend'
+            }
+          ]
+        },
+        {
+          name: 'None',
+          links: []
+        },
+        {
+          name: 'None',
+          links: []
+        }
+      ];
+      localStorage.setItem(`hosting_info_${newProjectForm.name}`, JSON.stringify(defaultHostingInfo));
+      
+      // Initialize github_pages JSON for new project
+      const defaultGitHubPages = {
+        config: {
+          profileUrl: newProjectForm.githubRepoUrl ? `https://github.com/${newProjectForm.githubRepoUrl.split('/').slice(-2, -1)[0]}` : 'https://github.com/jssg33',
+          repositoryUrl: newProjectForm.githubRepoUrl || 'https://github.com/jssg33/usc242',
+          documentationUrl: newProjectForm.githubPagesUrl || 'https://jssg33.github.io/usc242'
+        },
+        pageData: {
+          status: 'Active',
+          lastDeployed: 'January 30, 2026',
+          branch: 'main',
+          buildTool: 'GitHub Actions',
+          compiler: 'Vite'
+        }
+      };
+      localStorage.setItem(`github_pages_${newProjectForm.name}`, JSON.stringify(defaultGitHubPages));
       
       // Reset form
       setNewProjectForm({
@@ -424,6 +524,59 @@ export function SettingsPage() {
       // Initialize default project phase data
       initializeProjectPhaseData(newConfig.projectid);
       
+      // Initialize hosting_info JSON for generated project
+      const defaultHostingInfo = [
+        {
+          name: 'Render',
+          links: [
+            {
+              label: 'API Detail',
+              url: 'HTTPS://USC242.ONRENDER.COM',
+              image: 'https://images.unsplash.com/photo-1695668548342-c0c1ad479aee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxBUEklMjBiYWNrZW5kJTIwc2VydmVyJTIwdGVjaG5vbG9neXxlbnwxfHx8fDE3Njk5ODIzMzJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+              description: 'Backend API endpoints and server details'
+            },
+            {
+              label: 'API Swagger Documentation',
+              url: 'HTTPS://API242.ONRENDER.COM/SWAGGER',
+              image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxBUEklMjBkb2N1bWVudGF0aW9uJTIwc3dhZ2dlcnxlbnwxfHx8fDE3Njk5ODIzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080',
+              description: 'Interactive API documentation with Swagger'
+            },
+            {
+              label: 'React App Front Page',
+              url: 'HTTPS://REACT242-HO2O.ONRENDER.COM/INDEX.HTML',
+              image: 'https://images.unsplash.com/photo-1489436969537-cf0c1dc69cba?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3ZWIlMjByb290JTIwaG9zdGluZyUyMHNlcnZlcnxlbnwxfHx8fDE3Njk5ODIzMzN8MA&ixlib=rb-4.1.0&q=80&w=1080',
+              description: 'Main React application frontend'
+            }
+          ]
+        },
+        {
+          name: 'None',
+          links: []
+        },
+        {
+          name: 'None',
+          links: []
+        }
+      ];
+      localStorage.setItem(`hosting_info_${generatedProjectId}`, JSON.stringify(defaultHostingInfo));
+      
+      // Initialize github_pages JSON for generated project
+      const defaultGitHubPages = {
+        config: {
+          profileUrl: apiData.githubRepoUrl ? `https://github.com/${apiData.githubRepoUrl.split('/').slice(-2, -1)[0]}` : 'https://github.com/jssg33',
+          repositoryUrl: apiData.githubRepoUrl || 'https://github.com/jssg33/usc242',
+          documentationUrl: apiData.githubPagesUrl || 'https://jssg33.github.io/usc242'
+        },
+        pageData: {
+          status: 'Active',
+          lastDeployed: 'January 30, 2026',
+          branch: 'main',
+          buildTool: 'GitHub Actions',
+          compiler: 'Vite'
+        }
+      };
+      localStorage.setItem(`github_pages_${generatedProjectId}`, JSON.stringify(defaultGitHubPages));
+      
       // Trigger refresh in Sidebar to update projects list
       window.dispatchEvent(new Event('loginStatusChanged'));
       
@@ -557,6 +710,100 @@ export function SettingsPage() {
       link.href = url;
       link.download = `${projectConfig.projectid}p${id}.json`;
       link.click();
+    }
+  };
+
+  // Load team data
+  const loadTeamData = (projectid: string) => {
+    const saved = localStorage.getItem(`${projectid}_team`);
+    if (saved) {
+      setTeamData(JSON.parse(saved));
+    }
+  };
+
+  // Save team data
+  const saveTeamData = (data: TeamData) => {
+    if (projectConfig.projectid) {
+      localStorage.setItem(`${projectConfig.projectid}_team`, JSON.stringify(data));
+      setTeamData(data);
+    }
+  };
+
+  // Export team.json
+  const handleExportTeamJSON = () => {
+    if (projectConfig.projectid && teamData) {
+      const dataStr = JSON.stringify(teamData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'team.json';
+      link.click();
+    }
+  };
+
+  // Import team.json
+  const handleImportTeamJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          saveTeamData(data);
+          alert('Team data imported successfully!');
+        } catch (error) {
+          alert('Error parsing team.json file');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // Load milestones data
+  const loadMilestonesData = (projectid: string) => {
+    const saved = localStorage.getItem(`${projectid}_milestones`);
+    if (saved) {
+      setMilestones(JSON.parse(saved));
+    }
+  };
+
+  // Save milestones data
+  const saveMilestonesData = (data: Milestone[]) => {
+    if (projectConfig.projectid) {
+      localStorage.setItem(`${projectConfig.projectid}_milestones`, JSON.stringify(data));
+      setMilestones(data);
+    }
+  };
+
+  // Export milestones.json
+  const handleExportMilestonesJSON = () => {
+    if (projectConfig.projectid && milestones) {
+      const dataStr = JSON.stringify(milestones, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'milestones.json';
+      link.click();
+    }
+  };
+
+  // Import milestones.json
+  const handleImportMilestonesJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          saveMilestonesData(data);
+          alert('Milestones data imported successfully!');
+        } catch (error) {
+          alert('Error parsing milestones.json file');
+        }
+      };
+      reader.readAsText(file);
     }
   };
 
@@ -1250,6 +1497,401 @@ export function SettingsPage() {
                     p{p.id}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Team Management */}
+        {projectConfig.projectid && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+              <Users className="w-6 h-6 text-[#4CBB17]" />
+              Team Management
+            </h2>
+            
+            <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p className="text-sm text-blue-800">
+                Manage your project team members. Data is synced with the Team page and can be exported as team.json.
+              </p>
+            </div>
+
+            {/* Team Summary */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-green-50 rounded border border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-green-800">Developers</span>
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                    D
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-green-900">{teamData.developers.length}</p>
+              </div>
+              
+              <div className="p-4 bg-purple-50 rounded border border-purple-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-purple-800">Project Managers</span>
+                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                    PM
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-purple-900">{teamData.projectManagers.length}/3</p>
+              </div>
+              
+              <div className="p-4 bg-orange-50 rounded border border-orange-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-orange-800">Stakeholders</span>
+                  <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                    S
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-orange-900">{teamData.stakeholders.length}/10</p>
+              </div>
+            </div>
+
+            {/* Team Members List */}
+            <div className="space-y-4 mb-6">
+              {/* Developers */}
+              <div>
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-xs">
+                    D
+                  </div>
+                  Developers ({teamData.developers.length})
+                </h3>
+                {teamData.developers.length === 0 ? (
+                  <p className="text-sm text-gray-500 ml-7">No developers added yet</p>
+                ) : (
+                  <div className="ml-7 space-y-1">
+                    {teamData.developers.map((member) => (
+                      <div key={member.id} className="text-sm p-2 bg-gray-50 rounded flex items-center justify-between">
+                        <div>
+                          <span className="font-medium">{member.name}</span>
+                          <span className="text-gray-500 ml-2">• {member.email}</span>
+                          <span className="text-gray-500 ml-2">• {member.phone}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Project Managers */}
+              <div>
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs">
+                    PM
+                  </div>
+                  Project Managers ({teamData.projectManagers.length}/3)
+                </h3>
+                {teamData.projectManagers.length === 0 ? (
+                  <p className="text-sm text-gray-500 ml-7">No project managers added yet</p>
+                ) : (
+                  <div className="ml-7 space-y-1">
+                    {teamData.projectManagers.map((member) => (
+                      <div key={member.id} className="text-sm p-2 bg-gray-50 rounded flex items-center justify-between">
+                        <div>
+                          <span className="font-medium">{member.name}</span>
+                          <span className="text-gray-500 ml-2">• {member.email}</span>
+                          <span className="text-gray-500 ml-2">• {member.phone}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Stakeholders */}
+              <div>
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs">
+                    S
+                  </div>
+                  Stakeholders ({teamData.stakeholders.length}/10)
+                </h3>
+                {teamData.stakeholders.length === 0 ? (
+                  <p className="text-sm text-gray-500 ml-7">No stakeholders added yet</p>
+                ) : (
+                  <div className="ml-7 space-y-1">
+                    {teamData.stakeholders.map((member) => (
+                      <div key={member.id} className="text-sm p-2 bg-gray-50 rounded flex items-center justify-between">
+                        <div>
+                          <span className="font-medium">{member.name}</span>
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-xs ml-2">
+                            {member.type || 'General'}
+                          </span>
+                          <span className="text-gray-500 ml-2">• {member.email}</span>
+                          <span className="text-gray-500 ml-2">• {member.phone}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleExportTeamJSON}
+                className="flex-1 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export team.json
+              </button>
+              
+              <label className="flex-1 px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                <Upload className="w-4 h-4" />
+                Import team.json
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportTeamJSON}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              Team members can be added and edited on the Team page. Changes are automatically synced.
+            </p>
+          </div>
+        )}
+
+        {/* Milestones Management */}
+        {projectConfig.projectid && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-[#4CBB17]" />
+              Milestones Management
+            </h2>
+            
+            <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p className="text-sm text-blue-800">
+                Manage project milestones and important dates. Data is synced with the Milestones page and can be exported as milestones.json.
+              </p>
+            </div>
+
+            {/* Milestones Summary */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="p-4 bg-blue-50 rounded border border-blue-200">
+                <span className="text-sm font-medium text-blue-800">Total Milestones</span>
+                <p className="text-2xl font-bold text-blue-900 mt-2">{milestones.length}</p>
+              </div>
+              
+              <div className="p-4 bg-green-50 rounded border border-green-200">
+                <span className="text-sm font-medium text-green-800">Upcoming</span>
+                <p className="text-2xl font-bold text-green-900 mt-2">
+                  {milestones.filter(m => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const milestoneDate = new Date(m.date);
+                    milestoneDate.setHours(0, 0, 0, 0);
+                    return milestoneDate >= today;
+                  }).length}
+                </p>
+              </div>
+              
+              <div className="p-4 bg-yellow-50 rounded border border-yellow-200">
+                <span className="text-sm font-medium text-yellow-800">This Month</span>
+                <p className="text-2xl font-bold text-yellow-900 mt-2">
+                  {milestones.filter(m => {
+                    const today = new Date();
+                    const milestoneDate = new Date(m.date);
+                    const diffDays = Math.ceil((milestoneDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    return diffDays >= 0 && diffDays <= 30;
+                  }).length}
+                </p>
+              </div>
+              
+              <div className="p-4 bg-purple-50 rounded border border-purple-200">
+                <span className="text-sm font-medium text-purple-800">Types</span>
+                <p className="text-2xl font-bold text-purple-900 mt-2">
+                  {new Set(milestones.map(m => m.type)).size}
+                </p>
+              </div>
+            </div>
+
+            {/* Milestones List */}
+            <div className="mb-6">
+              <h3 className="font-semibold mb-3">Recent Milestones</h3>
+              {milestones.length === 0 ? (
+                <p className="text-sm text-gray-500">No milestones added yet</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {milestones
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .slice(0, 10)
+                    .map((milestone) => {
+                      const milestoneDate = new Date(milestone.date);
+                      const formattedDate = milestoneDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      });
+                      
+                      return (
+                        <div key={milestone.id} className="text-sm p-3 bg-gray-50 rounded flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium">{formattedDate}</span>
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">
+                                {milestone.type}
+                              </span>
+                            </div>
+                            <p className="text-gray-600">{milestone.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+              {milestones.length > 10 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Showing 10 of {milestones.length} milestones. View all on the Milestones page.
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleExportMilestonesJSON}
+                className="flex-1 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export milestones.json
+              </button>
+              
+              <label className="flex-1 px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                <Upload className="w-4 h-4" />
+                Import milestones.json
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportMilestonesJSON}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              Milestones can be added and edited on the Milestones page. Changes are automatically synced.
+            </p>
+          </div>
+        )}
+
+        {/* Environmental Settings */}
+        {projectConfig.projectid && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+              <Palette className="w-6 h-6 text-[#4CBB17]" />
+              Environmental Settings
+            </h2>
+            
+            <div className="mb-6 p-4 bg-purple-50 border-l-4 border-purple-500 rounded">
+              <p className="text-sm text-purple-800">
+                Customize the visual environment of your project. Changes are saved per-project and apply immediately.
+              </p>
+            </div>
+
+            {/* Sidebar Color Picker */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Navigation Sidebar Color
+                </label>
+                
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* Color Input */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={sidebarColor}
+                        onChange={(e) => setSidebarColor(e.target.value)}
+                        className="w-16 h-16 border-2 border-gray-300 rounded cursor-pointer"
+                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={sidebarColor}
+                          onChange={(e) => setSidebarColor(e.target.value)}
+                          placeholder="#4CBB17"
+                          className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter a hex color code or use the color picker
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Preview */}
+                  <div className="flex-1">
+                    <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+                      <div 
+                        className="p-4 text-white"
+                        style={{ backgroundColor: sidebarColor }}
+                      >
+                        <div className="mb-3">
+                          <div className="w-12 h-12 bg-white rounded mx-auto mb-2"></div>
+                          <p className="text-xs text-center opacity-75">Logo</p>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="bg-white/10 rounded px-3 py-2 text-sm">Home</div>
+                          <div className="bg-white text-black rounded px-3 py-2 text-sm">Active Item</div>
+                          <div className="bg-white/10 rounded px-3 py-2 text-sm">MyLinks</div>
+                        </div>
+                        <p className="text-xs text-center mt-3 opacity-75">Preview</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preset Colors */}
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Preset Colors</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'Kelly Green', color: '#4CBB17' },
+                      { name: 'USC Garnet', color: '#73000A' },
+                      { name: 'Navy Blue', color: '#1E3A8A' },
+                      { name: 'Purple', color: '#7C3AED' },
+                      { name: 'Teal', color: '#0D9488' },
+                      { name: 'Orange', color: '#EA580C' },
+                      { name: 'Pink', color: '#DB2777' },
+                      { name: 'Slate', color: '#475569' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.name}
+                        onClick={() => setSidebarColor(preset.color)}
+                        className="flex items-center gap-2 px-3 py-2 border-2 rounded hover:shadow-md transition-all"
+                        style={{ 
+                          borderColor: sidebarColor === preset.color ? preset.color : '#E5E7EB',
+                          backgroundColor: sidebarColor === preset.color ? `${preset.color}10` : 'white'
+                        }}
+                      >
+                        <div 
+                          className="w-5 h-5 rounded border border-gray-300"
+                          style={{ backgroundColor: preset.color }}
+                        ></div>
+                        <span className="text-sm">{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="flex justify-end pt-4 border-t">
+                <button
+                  onClick={() => handleSaveSidebarColor(sidebarColor)}
+                  className="px-6 py-3 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
+                >
+                  <Palette className="w-5 h-5" />
+                  Save Sidebar Color
+                </button>
               </div>
             </div>
           </div>

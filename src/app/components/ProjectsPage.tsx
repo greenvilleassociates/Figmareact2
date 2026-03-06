@@ -217,7 +217,7 @@ export function ProjectsPage() {
                       <img
                         src={displayData.imageUrl || displayData.image}
                         alt={displayData.phase}
-                        className="rounded max-[999px]:w-[200px] max-[999px]:h-[200px] min-[1000px]:w-[400px] min-[1000px]:h-[400px] object-cover"
+                        className="w-[150px] h-[150px] object-cover rounded"
                       />
                       {editMode && (
                         <button

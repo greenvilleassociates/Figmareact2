@@ -1,8 +1,9 @@
-import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut, ChevronDown } from 'lucide-react';
+import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut, ChevronDown, FileBarChart, Package, Users, Calendar, Edit3, Save, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
 import cockyLogo from 'figma:asset/126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
 import renderLogo from 'figma:asset/8e37ed4b08f466c006fba4657b07905dffc752dd.png';
+import { NavIconEditor } from './NavIconEditor';
 
 interface Project {
   id: string;
@@ -21,13 +22,113 @@ interface Project {
   username?: string;
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+interface NavItem {
+  key: string;
+  label: string;
+  path: string;
+  defaultIcon: any;
+  section: 'discover' | 'library';
+}
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation();
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [userProjects, setUserProjects] = useState<Project[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [customIcons, setCustomIcons] = useState<Record<string, string>>({});
+  const [isIconEditorOpen, setIsIconEditorOpen] = useState(false);
+  const [editingIcon, setEditingIcon] = useState<{ key: string; label: string } | null>(null);
+  const [sidebarColor, setSidebarColor] = useState('#4CBB17');
+
+  // Define all nav items
+  const navItems: NavItem[] = [
+    { key: 'home', label: 'Home', path: '/', defaultIcon: Home, section: 'discover' },
+    { key: 'myprojects', label: 'MyProjects', path: '/my-projects', defaultIcon: FolderKanban, section: 'discover' },
+    { key: 'browse', label: 'Browse', path: '#', defaultIcon: Search, section: 'discover' },
+    { key: 'mylinks', label: 'MyLinks', path: '/personal-pages', defaultIcon: FileText, section: 'library' },
+    { key: 'assignments', label: 'Assignments', path: '/assignments', defaultIcon: BookOpen, section: 'library' },
+    { key: 'projects', label: 'Project Details', path: '/projects', defaultIcon: FolderKanban, section: 'library' },
+    { key: 'documents', label: 'Documents', path: '/documents', defaultIcon: Files, section: 'library' },
+    { key: 'hosting', label: 'Hosting Information', path: '/render-react-info', defaultIcon: FileText, section: 'library' },
+    { key: 'github', label: 'Github Pages', path: '/github-pages', defaultIcon: Github, section: 'library' },
+    { key: 'reports', label: 'Reports', path: '/reports', defaultIcon: FileBarChart, section: 'library' },
+    { key: 'releases', label: 'Releases', path: '/releases', defaultIcon: Package, section: 'library' },
+    { key: 'team', label: 'Team', path: '/team', defaultIcon: Users, section: 'library' },
+    { key: 'milestones', label: 'Milestones', path: '/milestones', defaultIcon: Calendar, section: 'library' },
+    { key: 'settings', label: 'Settings', path: '/settings', defaultIcon: Settings, section: 'library' },
+  ];
+
+  // Load custom icons from localStorage
+  useEffect(() => {
+    if (currentProject) {
+      const projectid = currentProject.projectid || currentProject.id;
+      const savedIcons = localStorage.getItem(`${projectid}_navicons`);
+      if (savedIcons) {
+        setCustomIcons(JSON.parse(savedIcons));
+      } else {
+        setCustomIcons({});
+      }
+      
+      // Load sidebar color
+      const savedColor = localStorage.getItem(`${projectid}_sidebarcolor`);
+      if (savedColor) {
+        setSidebarColor(savedColor);
+      } else {
+        setSidebarColor('#4CBB17');
+      }
+    } else {
+      setCustomIcons({});
+      setSidebarColor('#4CBB17');
+    }
+  }, [currentProject]);
+
+  // Save custom icons to localStorage
+  const saveCustomIcon = (iconKey: string, imageUrl: string) => {
+    if (!currentProject) return;
+    
+    const projectid = currentProject.projectid || currentProject.id;
+    const updatedIcons = { ...customIcons, [iconKey]: imageUrl };
+    
+    setCustomIcons(updatedIcons);
+    localStorage.setItem(`${projectid}_navicons`, JSON.stringify(updatedIcons));
+  };
+
+  // Open icon editor
+  const openIconEditor = (key: string, label: string) => {
+    setEditingIcon({ key, label });
+    setIsIconEditorOpen(true);
+  };
+
+  // Close icon editor
+  const closeIconEditor = () => {
+    setIsIconEditorOpen(false);
+    setEditingIcon(null);
+  };
+
+  // Render icon (custom or default)
+  const renderIcon = (item: NavItem) => {
+    const customIconUrl = customIcons[item.key];
+    
+    if (customIconUrl) {
+      return (
+        <img 
+          src={customIconUrl} 
+          alt={item.label}
+          className="w-5 h-5 object-contain"
+        />
+      );
+    }
+    
+    const IconComponent = item.defaultIcon;
+    return <IconComponent className="w-5 h-5" />;
+  };
   
   // Fetch projects from API for the logged-in user
   const fetchUserProjects = async (userid: string) => {
@@ -57,12 +158,9 @@ export function Sidebar() {
       }));
       
       setUserProjects(mappedProjects);
-      
-      // Also store in localStorage for Settings page access
       localStorage.setItem('userProjects', JSON.stringify(mappedProjects));
     } catch (error) {
       console.error('Error fetching user projects:', error);
-      // Fallback to localStorage if API fails
       const savedProjects = localStorage.getItem('projects');
       if (savedProjects) {
         setUserProjects(JSON.parse(savedProjects));
@@ -86,7 +184,6 @@ export function Sidebar() {
       const user = JSON.parse(savedUser);
       setCurrentUser(user);
       
-      // Fetch projects if logged in
       if (savedLoginStatus && JSON.parse(savedLoginStatus) && user.uid) {
         fetchUserProjects(user.uid.toString());
       }
@@ -104,7 +201,6 @@ export function Sidebar() {
         const loggedIn = JSON.parse(savedLoginStatus);
         setIsLoggedIn(loggedIn);
         
-        // Fetch projects when user logs in
         if (loggedIn && savedUser) {
           const user = JSON.parse(savedUser);
           setCurrentUser(user);
@@ -124,9 +220,7 @@ export function Sidebar() {
       }
     };
 
-    // Listen for storage events from other windows
     window.addEventListener('storage', handleStorageChange);
-    // Also listen for custom event for same-window updates
     window.addEventListener('loginStatusChanged', handleStorageChange);
     
     return () => {
@@ -165,224 +259,240 @@ export function Sidebar() {
 
   const isRenderPage = location.pathname === '/render-react-info';
 
+  // Filter nav items by section
+  const discoverItems = navItems.filter(item => item.section === 'discover');
+  const libraryItems = navItems.filter(item => item.section === 'library');
+
   return (
-    <div className="h-screen bg-[#4CBB17] text-white flex flex-col" style={{ fontSize: '11pt', width: '248px' }}>
-      {/* Logo */}
-      <div className="p-6 flex justify-center">
-        <div className="bg-white rounded flex items-center justify-center w-[150px] h-[150px]">
-          <img 
-            src={isRenderPage ? renderLogo : cockyLogo}
-            alt={isRenderPage ? "Render Logo" : "University of South Carolina Cocky"}
-            className="w-[150px] h-[150px] object-contain"
-          />
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-4 overflow-auto">
-        {/* Discover Section */}
-        <div className="mb-6">
-          <h2 className="text-sm mb-2 px-3">Discover</h2>
-          <ul className="space-y-1">
-            <li>
-              <Link 
-                to="/" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <Home className="w-5 h-5" />
-                <span>Home</span>
-              </Link>
-            </li>
-            <li>
-              <a 
-                href="#" 
-                className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10"
-              >
-                <Search className="w-5 h-5" />
-                <span>Browse</span>
-              </a>
-            </li>
-            <li>
-              {!isLoggedIn ? (
-                <Link
-                  to="/login"
-                  className="flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10"
-                >
-                  <LogIn className="w-5 h-5" />
-                  <span>Login</span>
-                </Link>
-              ) : (
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-white/10 text-left"
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span>Logout</span>
-                </button>
-              )}
-            </li>
-          </ul>
+    <>
+      <div className="h-screen text-white flex flex-col" style={{ fontSize: '11pt', width: '248px', backgroundColor: sidebarColor }}>
+        {/* Logo */}
+        <div className="p-3 mb-[30px] flex justify-center">
+          <div className="bg-white rounded flex items-center justify-center w-[100px] h-[100px]">
+            <img 
+              src={isRenderPage ? renderLogo : cockyLogo}
+              alt={isRenderPage ? "Render Logo" : "University of South Carolina Cocky"}
+              className="w-[100px] h-[100px] object-contain"
+            />
+          </div>
         </div>
 
-        {/* Library Section */}
-        <div>
-          <h2 className="text-sm mb-2 px-3">Library</h2>
-          <ul className="space-y-1">
-            <li>
-              <Link 
-                to="/personal-pages" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/personal-pages') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <FileText className="w-5 h-5" />
-                <span>MyLinks</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/assignments" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/assignments') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <BookOpen className="w-5 h-5" />
-                <span>Assignments</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/projects" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/projects') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <FolderKanban className="w-5 h-5" />
-                <span>Projects</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/documents" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/documents') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <Files className="w-5 h-5" />
-                <span>Documents</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/render-react-info" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/render-react-info') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <FileText className="w-5 h-5" />
-                <span>Hosting Information</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/github-pages" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/github-pages') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <Github className="w-5 h-5" />
-                <span>Github Pages</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                to="/settings" 
-                className={`flex items-center gap-3 px-3 py-2 rounded ${
-                  isActive('/settings') ? 'bg-white text-black' : 'hover:bg-white/10'
-                }`}
-              >
-                <Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </nav>
-
-      {/* Footer */}
-      <div className="p-6">
-        <p className="text-sm font-semibold mb-3">Fusion Project Manager</p>
-        
-        {/* Project Selector Dropdown */}
-        {isLoggedIn && userProjects.length > 0 && (
-          <div className="relative mb-2">
+        {/* Edit Mode Toggle */}
+        {isLoggedIn && currentProject && (
+          <div className="px-4 mb-1">
             <button
-              onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-              className="w-full flex items-center justify-between px-3 py-2 bg-white/10 hover:bg-white/20 rounded transition-colors text-left"
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded transition-all text-sm ${
+                isEditMode 
+                  ? 'bg-white text-[#4CBB17] font-semibold' 
+                  : 'bg-white/10 hover:bg-white/20'
+              }`}
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-xs opacity-75">Active Project:</p>
-                <p className="text-sm font-medium truncate">
-                  {currentProject ? currentProject.name : 'Select a project...'}
-                </p>
-              </div>
-              <ChevronDown 
-                className={`w-4 h-4 ml-2 flex-shrink-0 transition-transform ${
-                  isProjectDropdownOpen ? 'rotate-180' : ''
-                }`} 
-              />
+              {isEditMode ? (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Done Editing</span>
+                </>
+              ) : (
+                <>
+                  <Edit3 className="w-4 h-4" />
+                  <span>Edit Icons</span>
+                </>
+              )}
             </button>
-            
-            {/* Dropdown Menu */}
-            {isProjectDropdownOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded shadow-lg max-h-64 overflow-y-auto z-50">
-                <div className="py-1">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b">
-                    Your Projects ({userProjects.length})
-                  </div>
-                  {userProjects.map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => handleProjectSelect(project)}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors ${
-                        currentProject?.id === project.id ? 'bg-[#4CBB17]/10' : ''
+          </div>
+        )}
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 overflow-auto">
+          {/* Discover Section */}
+          <div className="mb-3">
+            <h2 className="text-xs mb-1.5 px-3 opacity-75">Discover</h2>
+            <ul className="space-y-0.5">
+              {discoverItems.map((item) => (
+                <li key={item.key} className="relative group">
+                  {item.path === '#' ? (
+                    <a 
+                      href={item.path} 
+                      onClick={onNavigate}
+                      className={`flex items-center gap-3 px-3 py-1.5 rounded hover:bg-white/10 text-sm ${
+                        isEditMode ? 'pr-10' : ''
                       }`}
                     >
-                      <p className="text-sm font-medium text-gray-800">{project.name}</p>
-                      {project.projectid && (
-                        <p className="text-xs text-gray-500">ID: {project.projectid}</p>
-                      )}
-                      {currentProject?.id === project.id && (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-[#4CBB17] text-white text-xs rounded">
-                          Active
-                        </span>
-                      )}
+                      {renderIcon(item)}
+                      <span>{item.label}</span>
+                    </a>
+                  ) : (
+                    <Link 
+                      to={item.path} 
+                      onClick={onNavigate}
+                      className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm ${
+                        isActive(item.path) ? 'bg-white text-black' : 'hover:bg-white/10'
+                      } ${isEditMode ? 'pr-10' : ''}`}
+                    >
+                      {renderIcon(item)}
+                      <span>{item.label}</span>
+                    </Link>
+                  )}
+                  
+                  {/* Edit Button */}
+                  {isEditMode && (
+                    <button
+                      onClick={() => openIconEditor(item.key, item.label)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-white/20 hover:bg-white/30 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Edit icon"
+                    >
+                      <Edit3 className="w-3 h-3" />
                     </button>
-                  ))}
+                  )}
+                </li>
+              ))}
+              
+              {/* Login/Logout */}
+              <li>
+                {!isLoggedIn ? (
+                  <Link
+                    to="/login"
+                    onClick={onNavigate}
+                    className="flex items-center gap-3 px-3 py-1.5 rounded hover:bg-white/10 text-sm"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    <span>Login</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      onNavigate?.();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-1.5 rounded hover:bg-white/10 text-left text-sm"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span>Logout</span>
+                  </button>
+                )}
+              </li>
+            </ul>
+          </div>
+
+          {/* Library Section */}
+          <div>
+            <h2 className="text-xs mb-1.5 px-3 opacity-75">Library</h2>
+            <ul className="space-y-0.5">
+              {libraryItems.map((item) => (
+                <li key={item.key} className="relative group">
+                  <Link 
+                    to={item.path} 
+                    onClick={onNavigate}
+                    className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm ${
+                      isActive(item.path) ? 'bg-white text-black' : 'hover:bg-white/10'
+                    } ${isEditMode ? 'pr-10' : ''}`}
+                  >
+                    {renderIcon(item)}
+                    <span>{item.label}</span>
+                  </Link>
+                  
+                  {/* Edit Button */}
+                  {isEditMode && (
+                    <button
+                      onClick={() => openIconEditor(item.key, item.label)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-white/20 hover:bg-white/30 rounded opacity-opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Edit icon"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4">
+          <p className="text-xs font-semibold mb-2">Fusion Project Manager 26.02</p>
+          
+          {/* Project Selector Dropdown */}
+          {isLoggedIn && userProjects.length > 0 && (
+            <div className="relative mb-2">
+              <button
+                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 bg-white/10 hover:bg-white/20 rounded transition-colors text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs opacity-75">Active Project:</p>
+                  <p className="text-xs font-medium truncate">
+                    {currentProject ? currentProject.name : 'Select a project...'}
+                  </p>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* User Info */}
-        {isLoggedIn && currentUser && (
-          <div className="text-xs opacity-75 mt-2">
-            <p>Logged in as:</p>
-            <p className="font-medium">{currentUser.username}</p>
-          </div>
-        )}
-        
-        {/* No projects message */}
-        {isLoggedIn && userProjects.length === 0 && (
-          <div className="text-xs opacity-75 mt-2 p-2 bg-white/10 rounded">
-            <p>No projects found.</p>
-            <p className="mt-1">Create one in Settings!</p>
-          </div>
-        )}
+                <ChevronDown 
+                  className={`w-3.5 h-3.5 ml-2 flex-shrink-0 transition-transform ${
+                    isProjectDropdownOpen ? 'rotate-180' : ''
+                  }`} 
+                />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {isProjectDropdownOpen && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded shadow-lg max-h-64 overflow-y-auto z-50">
+                  <div className="py-1">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 border-b">
+                      Your Projects ({userProjects.length})
+                    </div>
+                    {userProjects.map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => handleProjectSelect(project)}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors ${
+                          currentProject?.id === project.id ? 'bg-[#4CBB17]/10' : ''
+                        }`}
+                      >
+                        <p className="text-sm font-medium text-gray-800">{project.name}</p>
+                        {project.projectid && (
+                          <p className="text-xs text-gray-500">ID: {project.projectid}</p>
+                        )}
+                        {currentProject?.id === project.id && (
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-[#4CBB17] text-white text-xs rounded">
+                            Active
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* User Info */}
+          {isLoggedIn && currentUser && (
+            <div className="text-xs opacity-75 mt-2">
+              <p>Logged in as:</p>
+              <p className="font-medium">{currentUser.username}</p>
+            </div>
+          )}
+          
+          {/* No projects message */}
+          {isLoggedIn && userProjects.length === 0 && (
+            <div className="text-xs opacity-75 mt-2 p-2 bg-white/10 rounded">
+              <p>No projects found.</p>
+              <p className="mt-1">Create one in Settings!</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Icon Editor Modal */}
+      {editingIcon && (
+        <NavIconEditor
+          isOpen={isIconEditorOpen}
+          onClose={closeIconEditor}
+          iconKey={editingIcon.key}
+          iconLabel={editingIcon.label}
+          currentIcon={customIcons[editingIcon.key] || null}
+          onSave={saveCustomIcon}
+        />
+      )}
+    </>
   );
 }

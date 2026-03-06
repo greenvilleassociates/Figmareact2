@@ -36,6 +36,12 @@ import { Phase10 } from '@/app/components/projects/Phase10';
 import { DocumentsPage } from '@/app/components/DocumentsPage';
 import { SettingsPage } from '@/app/components/SettingsPage';
 import { LoginPage } from '@/app/components/LoginPage';
+import { ReportsPage } from '@/app/components/ReportsPage';
+import { ReleasesPage } from '@/app/components/ReleasesPage';
+import { TeamPage } from '@/app/components/TeamPage';
+import { MilestonesPage } from '@/app/components/MilestonesPage';
+import { MyProjectsPage } from '@/app/components/MyProjectsPage';
+import { VisitorRegisterPage } from '@/app/components/VisitorRegisterPage';
 
 export const router = createBrowserRouter([
   {
@@ -45,6 +51,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         Component: Home,
+      },
+      {
+        path: 'my-projects',
+        Component: MyProjectsPage,
       },
       {
         path: 'render-react-info',
@@ -181,6 +191,26 @@ export const router = createBrowserRouter([
       {
         path: 'login',
         Component: LoginPage,
+      },
+      {
+        path: 'reports',
+        Component: ReportsPage,
+      },
+      {
+        path: 'releases',
+        Component: ReleasesPage,
+      },
+      {
+        path: 'team',
+        Component: TeamPage,
+      },
+      {
+        path: 'milestones',
+        Component: MilestonesPage,
+      },
+      {
+        path: 'visitor-register',
+        Component: VisitorRegisterPage,
       },
     ],
   },
