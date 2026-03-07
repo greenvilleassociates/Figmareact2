@@ -27,6 +27,7 @@ interface Project {
   account?: string;
   subaccount?: string;
   companyid?: string;
+  logoUrl?: string;
 }
 
 interface AssignmentImage {
@@ -105,7 +106,8 @@ export function SettingsPage() {
     hostingProviderUrl: '',
     account: '',
     subaccount: '',
-    companyid: ''
+    companyid: '',
+    logoUrl: ''
   });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [assignmentImages, setAssignmentImages] = useState<AssignmentImage[]>([]);
@@ -128,6 +130,7 @@ export function SettingsPage() {
   });
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [sidebarColor, setSidebarColor] = useState('#4CBB17');
+  const [logoUrl, setLogoUrl] = useState('');
 
   // Generate random 8-digit number
   const generateRandomId = () => {
@@ -139,6 +142,16 @@ export function SettingsPage() {
     if (projectConfig.projectid) {
       setSidebarColor(color);
       localStorage.setItem(`${projectConfig.projectid}_sidebarcolor`, color);
+      // Trigger sidebar update
+      window.dispatchEvent(new Event('storage'));
+    }
+  };
+
+  // Save logo URL
+  const handleSaveLogoUrl = (url: string) => {
+    if (projectConfig.projectid) {
+      setLogoUrl(url);
+      localStorage.setItem(`${projectConfig.projectid}_logourl`, url);
       // Trigger sidebar update
       window.dispatchEvent(new Event('storage'));
     }
@@ -174,6 +187,12 @@ export function SettingsPage() {
       const savedColor = localStorage.getItem(`${config.projectid}_sidebarcolor`);
       if (savedColor) {
         setSidebarColor(savedColor);
+      }
+      
+      // Load logo URL
+      const savedLogo = localStorage.getItem(`${config.projectid}_logourl`);
+      if (savedLogo) {
+        setLogoUrl(savedLogo);
       }
     }
   }, []);
@@ -271,11 +290,12 @@ export function SettingsPage() {
         hostingProviderUrl: newProjectForm.hostingProviderUrl,
         account: newProjectForm.account,
         subaccount: newProjectForm.subaccount,
-        companyid: newProjectForm.companyid
+        companyid: newProjectForm.companyid,
+        logoUrl: newProjectForm.logoUrl || logoUrl
       };
 
       // POST to API
-      const response = await fetch('https://api242.onrender.com/api/projects', {
+      const response = await fetch('https://api242.onrender.com/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -305,7 +325,8 @@ export function SettingsPage() {
         hostingProviderUrl: newProjectForm.hostingProviderUrl,
         account: newProjectForm.account,
         subaccount: newProjectForm.subaccount,
-        companyid: newProjectForm.companyid
+        companyid: newProjectForm.companyid,
+        logoUrl: newProjectForm.logoUrl || logoUrl
       };
 
       const updatedProjects = [...projects, project];
@@ -375,7 +396,8 @@ export function SettingsPage() {
         hostingProviderUrl: '',
         account: '',
         subaccount: '',
-        companyid: ''
+        companyid: '',
+        logoUrl: ''
       });
 
       // Trigger refresh in Sidebar
@@ -488,7 +510,8 @@ export function SettingsPage() {
         hostingProviderUrl: currentProject?.hostingProviderUrl || '',
         account: generatedAccountId,
         subaccount: generatedSubAccountId,
-        companyid: generatedCustomerId
+        companyid: generatedCustomerId,
+        logoUrl: currentProject?.logoUrl || logoUrl || ''
       };
 
       // POST to API
@@ -499,6 +522,8 @@ export function SettingsPage() {
         },
         body: JSON.stringify(apiData)
       });
+
+      console.log("Create Project Response", response);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -933,6 +958,17 @@ export function SettingsPage() {
                   className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Logo URL</label>
+                <input
+                  type="text"
+                  value={newProjectForm.logoUrl}
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, logoUrl: e.target.value })}
+                  placeholder="https://images.unsplash.com/... (optional)"
+                  className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                />
+                <p className="text-xs text-gray-500 mt-1">Optional: Custom logo for sidebar (leave empty for default USC logo)</p>
+              </div>
               <button
                 onClick={handleAddProject}
                 className="w-full px-6 py-2 bg-[#4CBB17] text-white rounded hover:bg-[#3DA013] transition-colors flex items-center justify-center gap-2 font-semibold"
@@ -1217,7 +1253,7 @@ export function SettingsPage() {
                 </p>
                 <ul className="text-sm text-blue-700 mt-2 space-y-1 ml-4 list-disc">
                   <li>Creates random 8-digit IDs for project, customer, user, account, and subaccount</li>
-                  <li>POSTs a project shell to <code className="bg-blue-100 px-1 rounded">https://api242.onrender.com/projects</code></li>
+                  <li>POSTs a project shell to <code className="bg-blue-100 px-1 rounded">https://api242.onrender.com/api/projects</code></li>
                   <li>Initializes 20 assignment templates and 10 project phase templates</li>
                   <li>Saves configuration locally for export and JSON generation</li>
                 </ul>
@@ -1892,6 +1928,68 @@ export function SettingsPage() {
                   <Palette className="w-5 h-5" />
                   Save Sidebar Color
                 </button>
+              </div>
+
+              {/* Logo URL Selection */}
+              <div className="mt-6 pt-6 border-t">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Navigation Logo Image
+                </label>
+                
+                <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                  <p className="text-sm text-blue-800">
+                    Enter the URL or path of your logo image. You can use Unsplash URLs, external image URLs, or figma:asset imports.
+                  </p>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-4">
+                  {/* URL Input */}
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={logoUrl}
+                      onChange={(e) => setLogoUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/... or leave empty for default"
+                      className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Leave empty to use the default USC Cocky logo
+                    </p>
+                  </div>
+
+                  {/* Logo Preview */}
+                  <div className="flex-1">
+                    <div className="border-2 border-gray-200 rounded-lg p-4 bg-white flex items-center justify-center h-32">
+                      {logoUrl ? (
+                        <img 
+                          src={logoUrl} 
+                          alt="Logo Preview" 
+                          className="max-h-24 max-w-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = '';
+                            e.currentTarget.alt = 'Invalid image URL';
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center text-gray-400">
+                          <Image className="w-12 h-12 mx-auto mb-2" />
+                          <p className="text-xs">Logo Preview</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Logo Button */}
+                <div className="flex justify-end mt-4">
+                  <button
+                    onClick={() => handleSaveLogoUrl(logoUrl)}
+                    className="px-6 py-3 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-2 font-medium"
+                  >
+                    <Image className="w-5 h-5" />
+                    Save Logo URL
+                  </button>
+                </div>
               </div>
             </div>
           </div>

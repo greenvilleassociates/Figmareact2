@@ -20,6 +20,7 @@ interface Project {
   subaccount?: string;
   companyid?: string;
   username?: string;
+  logoUrl?: string;
 }
 
 interface SidebarProps {
@@ -46,6 +47,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const [isIconEditorOpen, setIsIconEditorOpen] = useState(false);
   const [editingIcon, setEditingIcon] = useState<{ key: string; label: string } | null>(null);
   const [sidebarColor, setSidebarColor] = useState('#4CBB17');
+  const [customLogoUrl, setCustomLogoUrl] = useState('');
 
   // Define all nav items
   const navItems: NavItem[] = [
@@ -83,9 +85,22 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       } else {
         setSidebarColor('#4CBB17');
       }
+      
+      // Load custom logo - prioritize project's logoUrl, then localStorage
+      const projectLogo = currentProject.logoUrl;
+      const savedLogo = localStorage.getItem(`${projectid}_logourl`);
+      
+      if (projectLogo) {
+        setCustomLogoUrl(projectLogo);
+      } else if (savedLogo) {
+        setCustomLogoUrl(savedLogo);
+      } else {
+        setCustomLogoUrl('');
+      }
     } else {
       setCustomIcons({});
       setSidebarColor('#4CBB17');
+      setCustomLogoUrl('');
     }
   }, [currentProject]);
 
@@ -133,11 +148,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   // Fetch projects from API for the logged-in user
   const fetchUserProjects = async (userid: string) => {
     try {
-      const response = await fetch(`https://api242.onrender.com/userprojects?userid=${userid}`);
+      const response = await fetch(`https://api242.onrender.com/api/projects?userid=${userid}`);
+      console.log("Projects Response", response);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch projects');
       }
       const userProjects = await response.json();
+      console.log("Projects Data", userProjects);
       
       // Map to our Project interface - already filtered by userid from API
       const mappedProjects = userProjects.map((p: any) => ({
@@ -154,7 +172,8 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         hostingProviderUrl: p.hostingProviderUrl,
         account: p.account,
         subaccount: p.subaccount,
-        companyid: p.companyid
+        companyid: p.companyid,
+        logoUrl: p.logoUrl
       }));
       
       setUserProjects(mappedProjects);
@@ -270,9 +289,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <div className="p-3 mb-[30px] flex justify-center">
           <div className="bg-white rounded flex items-center justify-center w-[100px] h-[100px]">
             <img 
-              src={isRenderPage ? renderLogo : cockyLogo}
-              alt={isRenderPage ? "Render Logo" : "University of South Carolina Cocky"}
+              src={customLogoUrl || (isRenderPage ? renderLogo : cockyLogo)}
+              alt={customLogoUrl ? "Custom Logo" : (isRenderPage ? "Render Logo" : "University of South Carolina Cocky")}
               className="w-[100px] h-[100px] object-contain"
+              onError={(e) => {
+                // Fallback to default logo if custom logo fails to load
+                e.currentTarget.src = isRenderPage ? renderLogo : cockyLogo;
+              }}
             />
           </div>
         </div>

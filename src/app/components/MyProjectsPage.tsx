@@ -16,6 +16,7 @@ interface Project {
   account?: string;
   subaccount?: string;
   companyid?: string;
+  logoUrl?: string;
 }
 
 export function MyProjectsPage() {
@@ -32,11 +33,14 @@ export function MyProjectsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`https://api242.onrender.com/userprojects?userid=${userid}`);
+      const response = await fetch(`https://api242.onrender.com/api/projects?userid=${userid}`);
+      console.log("Projects Response", response);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch projects');
       }
       const userProjects = await response.json();
+      console.log("Projects Data", userProjects);
       
       // Map to our Project interface
       const mappedProjects = userProjects.map((p: any) => ({
@@ -53,7 +57,8 @@ export function MyProjectsPage() {
         hostingProviderUrl: p.hostingProviderUrl,
         account: p.account,
         subaccount: p.subaccount,
-        companyid: p.companyid
+        companyid: p.companyid,
+        logoUrl: p.logoUrl
       }));
       
       setProjects(mappedProjects);
@@ -292,43 +297,43 @@ export function MyProjectsPage() {
 
             {/* Bottom Section - Project Details */}
             {selectedProject && (
-              <div className="flex-shrink-0 bg-white border-t p-12 pt-6">
-                <h2 className="text-xl font-bold mb-6">Project Details</h2>
+              <div className="flex-shrink-0 bg-white border-t p-8 pt-4 max-h-[60vh] overflow-auto">
+                <h2 className="text-base font-bold mb-4">Project Details</h2>
                 
-                <div className="bg-gradient-to-br from-[#4CBB17]/10 to-white rounded-xl border-2 border-[#4CBB17]/20 p-8 shadow-lg">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-[#4CBB17] rounded-lg flex items-center justify-center">
-                        <FolderKanban className="w-8 h-8 text-white" />
+                <div className="bg-gradient-to-br from-[#4CBB17]/10 to-white rounded-xl border-2 border-[#4CBB17]/20 p-6 shadow-lg">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-[#4CBB17] rounded-lg flex items-center justify-center">
+                        <FolderKanban className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-bold mb-1">{selectedProject.name}</h3>
+                        <h3 className="text-lg font-bold mb-0.5">{selectedProject.name}</h3>
                         {selectedProject.projectid && (
-                          <p className="text-gray-600">Project ID: {selectedProject.projectid}</p>
+                          <p className="text-xs text-gray-600">Project ID: {selectedProject.projectid}</p>
                         )}
                       </div>
                     </div>
                     
-                    <span className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                       Active Project
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* User Information */}
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center gap-2 mb-3">
-                        <User className="w-5 h-5 text-[#4CBB17]" />
-                        <h4 className="font-semibold">Owner Information</h4>
+                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="w-4 h-4 text-[#4CBB17]" />
+                        <h4 className="font-semibold text-xs">Owner Information</h4>
                       </div>
                       {selectedProject.username && (
-                        <p className="text-sm mb-1">
+                        <p className="text-xs mb-1">
                           <span className="text-gray-500">Username:</span>
                           <span className="ml-2 font-medium">{selectedProject.username}</span>
                         </p>
                       )}
                       {selectedProject.userid && (
-                        <p className="text-sm">
+                        <p className="text-xs">
                           <span className="text-gray-500">User ID:</span>
                           <span className="ml-2 font-medium">{selectedProject.userid}</span>
                         </p>
@@ -336,46 +341,46 @@ export function MyProjectsPage() {
                     </div>
 
                     {/* Project Information */}
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center gap-2 mb-3">
-                        <FolderKanban className="w-5 h-5 text-[#4CBB17]" />
-                        <h4 className="font-semibold">Project Information</h4>
+                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FolderKanban className="w-4 h-4 text-[#4CBB17]" />
+                        <h4 className="font-semibold text-xs">Project Information</h4>
                       </div>
                       {selectedProject.projectname && (
-                        <p className="text-sm mb-1">
+                        <p className="text-xs mb-1">
                           <span className="text-gray-500">Name:</span>
                           <span className="ml-2 font-medium">{selectedProject.projectname}</span>
                         </p>
                       )}
                       {selectedProject.instanceid && (
-                        <p className="text-sm break-all">
+                        <p className="text-xs break-all">
                           <span className="text-gray-500">Instance:</span>
-                          <span className="ml-2 font-medium text-xs">{selectedProject.instanceid}</span>
+                          <span className="ml-2 font-medium text-[10px]">{selectedProject.instanceid}</span>
                         </p>
                       )}
                     </div>
 
                     {/* Company Information */}
                     {(selectedProject.companyid || selectedProject.account || selectedProject.subaccount) && (
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Building2 className="w-5 h-5 text-[#4CBB17]" />
-                          <h4 className="font-semibold">Organization</h4>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 className="w-4 h-4 text-[#4CBB17]" />
+                          <h4 className="font-semibold text-xs">Organization</h4>
                         </div>
                         {selectedProject.companyid && (
-                          <p className="text-sm mb-1">
+                          <p className="text-xs mb-1">
                             <span className="text-gray-500">Company ID:</span>
                             <span className="ml-2 font-medium">{selectedProject.companyid}</span>
                           </p>
                         )}
                         {selectedProject.account && (
-                          <p className="text-sm mb-1">
+                          <p className="text-xs mb-1">
                             <span className="text-gray-500">Account:</span>
                             <span className="ml-2 font-medium">{selectedProject.account}</span>
                           </p>
                         )}
                         {selectedProject.subaccount && (
-                          <p className="text-sm">
+                          <p className="text-xs">
                             <span className="text-gray-500">Subaccount:</span>
                             <span className="ml-2 font-medium">{selectedProject.subaccount}</span>
                           </p>
@@ -385,16 +390,16 @@ export function MyProjectsPage() {
 
                     {/* GitHub Repository */}
                     {selectedProject.githubRepoUrl && (
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Code className="w-5 h-5 text-[#4CBB17]" />
-                          <h4 className="font-semibold">GitHub Repository</h4>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Code className="w-4 h-4 text-[#4CBB17]" />
+                          <h4 className="font-semibold text-xs">GitHub Repository</h4>
                         </div>
                         <a
                           href={selectedProject.githubRepoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 break-all"
+                          className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 break-all"
                         >
                           <span className="truncate">{selectedProject.githubRepoUrl}</span>
                           <ExternalLink className="w-3 h-3 flex-shrink-0" />
@@ -404,16 +409,16 @@ export function MyProjectsPage() {
 
                     {/* GitHub Pages */}
                     {selectedProject.githubPagesUrl && (
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Globe className="w-5 h-5 text-[#4CBB17]" />
-                          <h4 className="font-semibold">GitHub Pages</h4>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Globe className="w-4 h-4 text-[#4CBB17]" />
+                          <h4 className="font-semibold text-xs">GitHub Pages</h4>
                         </div>
                         <a
                           href={selectedProject.githubPagesUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 break-all"
+                          className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 break-all"
                         >
                           <span className="truncate">{selectedProject.githubPagesUrl}</span>
                           <ExternalLink className="w-3 h-3 flex-shrink-0" />
@@ -423,13 +428,13 @@ export function MyProjectsPage() {
 
                     {/* Hosting Provider */}
                     {(selectedProject.hostingProviderName || selectedProject.hostingProviderUrl) && (
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Globe className="w-5 h-5 text-[#4CBB17]" />
-                          <h4 className="font-semibold">Hosting Provider</h4>
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Globe className="w-4 h-4 text-[#4CBB17]" />
+                          <h4 className="font-semibold text-xs">Hosting Provider</h4>
                         </div>
                         {selectedProject.hostingProviderName && (
-                          <p className="text-sm mb-1">
+                          <p className="text-xs mb-1">
                             <span className="text-gray-500">Provider:</span>
                             <span className="ml-2 font-medium">{selectedProject.hostingProviderName}</span>
                           </p>
@@ -439,7 +444,7 @@ export function MyProjectsPage() {
                             href={selectedProject.hostingProviderUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 break-all"
+                            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 break-all"
                           >
                             <span className="truncate">{selectedProject.hostingProviderUrl}</span>
                             <ExternalLink className="w-3 h-3 flex-shrink-0" />
@@ -450,12 +455,12 @@ export function MyProjectsPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="mt-6 pt-6 border-t border-gray-200 flex gap-4">
+                  <div className="mt-4 pt-4 border-t border-gray-200 flex gap-3">
                     <button
                       onClick={handleSetActiveProject}
-                      className="px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors flex items-center gap-2"
+                      className="px-4 py-2 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors flex items-center gap-2 text-sm"
                     >
-                      <CheckCircle2 className="w-5 h-5" />
+                      <CheckCircle2 className="w-4 h-4" />
                       Set as Active Project
                     </button>
                     
@@ -464,9 +469,9 @@ export function MyProjectsPage() {
                         href={selectedProject.githubRepoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-6 py-3 border-2 border-[#4CBB17] text-[#4CBB17] rounded-lg hover:bg-[#4CBB17] hover:text-white transition-colors flex items-center gap-2"
+                        className="px-4 py-2 border-2 border-[#4CBB17] text-[#4CBB17] rounded-lg hover:bg-[#4CBB17] hover:text-white transition-colors flex items-center gap-2 text-sm"
                       >
-                        <Code className="w-5 h-5" />
+                        <Code className="w-4 h-4" />
                         View on GitHub
                       </a>
                     )}
@@ -476,9 +481,9 @@ export function MyProjectsPage() {
                         href={selectedProject.githubPagesUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-6 py-3 border-2 border-[#4CBB17] text-[#4CBB17] rounded-lg hover:bg-[#4CBB17] hover:text-white transition-colors flex items-center gap-2"
+                        className="px-4 py-2 border-2 border-[#4CBB17] text-[#4CBB17] rounded-lg hover:bg-[#4CBB17] hover:text-white transition-colors flex items-center gap-2 text-sm"
                       >
-                        <Globe className="w-5 h-5" />
+                        <Globe className="w-4 h-4" />
                         View Live Site
                       </a>
                     )}
