@@ -1,8 +1,7 @@
 import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut, ChevronDown, FileBarChart, Package, Users, Calendar, Edit3, Save, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
-import cockyLogo from 'figma:asset/126053ab73e890e8d5b052524672a0e1d0c2fa4d.png';
-import renderLogo from 'figma:asset/8e37ed4b08f466c006fba4657b07905dffc752dd.png';
+import fusionLogo from 'figma:asset/aac5dfb9d0371a7143ad719802888a30e3ea5aed.png';
 import { NavIconEditor } from './NavIconEditor';
 
 interface Project {
@@ -46,7 +45,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const [customIcons, setCustomIcons] = useState<Record<string, string>>({});
   const [isIconEditorOpen, setIsIconEditorOpen] = useState(false);
   const [editingIcon, setEditingIcon] = useState<{ key: string; label: string } | null>(null);
-  const [sidebarColor, setSidebarColor] = useState('#4CBB17');
+  const [sidebarColor, setSidebarColor] = useState('#006622');
   const [customLogoUrl, setCustomLogoUrl] = useState('');
 
   // Define all nav items
@@ -83,7 +82,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       if (savedColor) {
         setSidebarColor(savedColor);
       } else {
-        setSidebarColor('#4CBB17');
+        setSidebarColor('#006622');
       }
       
       // Load custom logo - prioritize project's logoUrl, then localStorage
@@ -99,7 +98,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       }
     } else {
       setCustomIcons({});
-      setSidebarColor('#4CBB17');
+      setSidebarColor('#006622');
       setCustomLogoUrl('');
     }
   }, [currentProject]);
@@ -286,15 +285,15 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     <>
       <div className="h-screen text-white flex flex-col" style={{ fontSize: '11pt', width: '248px', backgroundColor: sidebarColor }}>
         {/* Logo */}
-        <div className="p-3 mb-[30px] flex justify-center">
-          <div className="bg-white rounded flex items-center justify-center w-[100px] h-[100px]">
+        <div className="px-3 pt-3 mb-[30px]">
+          <div className="bg-white rounded flex items-center justify-center w-full h-[170px]">
             <img 
-              src={customLogoUrl || (isRenderPage ? renderLogo : cockyLogo)}
-              alt={customLogoUrl ? "Custom Logo" : (isRenderPage ? "Render Logo" : "University of South Carolina Cocky")}
-              className="w-[100px] h-[100px] object-contain"
+              src={customLogoUrl || (isRenderPage ? fusionLogo : fusionLogo)}
+              alt={customLogoUrl ? "Custom Logo" : (isRenderPage ? "Fusion Logo" : "Fusion Logo")}
+              className="w-full h-full object-cover px-2"
               onError={(e) => {
                 // Fallback to default logo if custom logo fails to load
-                e.currentTarget.src = isRenderPage ? renderLogo : cockyLogo;
+                e.currentTarget.src = isRenderPage ? fusionLogo : fusionLogo;
               }}
             />
           </div>
@@ -307,9 +306,10 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               onClick={() => setIsEditMode(!isEditMode)}
               className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded transition-all text-sm ${
                 isEditMode 
-                  ? 'bg-white text-[#4CBB17] font-semibold' 
+                  ? 'bg-white font-semibold' 
                   : 'bg-white/10 hover:bg-white/20'
               }`}
+              style={isEditMode ? { color: sidebarColor } : {}}
             >
               {isEditMode ? (
                 <>

@@ -129,7 +129,7 @@ export function SettingsPage() {
     stakeholders: []
   });
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [sidebarColor, setSidebarColor] = useState('#4CBB17');
+  const [sidebarColor, setSidebarColor] = useState('#006622');
   const [logoUrl, setLogoUrl] = useState('');
 
   // Generate random 8-digit number
@@ -967,7 +967,7 @@ export function SettingsPage() {
                   placeholder="https://images.unsplash.com/... (optional)"
                   className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
                 />
-                <p className="text-xs text-gray-500 mt-1">Optional: Custom logo for sidebar (leave empty for default USC logo)</p>
+                <p className="text-xs text-gray-500 mt-1">Optional: Custom logo for sidebar (leave empty for default Fusion logo)</p>
               </div>
               <button
                 onClick={handleAddProject}
@@ -1853,7 +1853,7 @@ export function SettingsPage() {
                           type="text"
                           value={sidebarColor}
                           onChange={(e) => setSidebarColor(e.target.value)}
-                          placeholder="#4CBB17"
+                          placeholder="#006622"
                           className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -1890,6 +1890,7 @@ export function SettingsPage() {
                   <p className="text-sm font-medium text-gray-700 mb-2">Preset Colors</p>
                   <div className="flex flex-wrap gap-2">
                     {[
+                      { name: 'Dark Green', color: '#006622' },
                       { name: 'Kelly Green', color: '#4CBB17' },
                       { name: 'USC Garnet', color: '#73000A' },
                       { name: 'Navy Blue', color: '#1E3A8A' },
@@ -1953,7 +1954,7 @@ export function SettingsPage() {
                       className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Leave empty to use the default USC Cocky logo
+                      Leave empty to use the default Fusion Project Manager logo
                     </p>
                   </div>
 
