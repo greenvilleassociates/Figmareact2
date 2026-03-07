@@ -275,7 +275,7 @@ export function SettingsPage() {
       };
 
       // POST to API
-      const response = await fetch('https://api242.onrender.com/projects', {
+      const response = await fetch('https://api242.onrender.com/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -492,7 +492,7 @@ export function SettingsPage() {
       };
 
       // POST to API
-      const response = await fetch('https://api242.onrender.com/projects', {
+      const response = await fetch('https://api242.onrender.com/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
