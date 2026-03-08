@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router';
 import { Sidebar } from '@/app/components/Sidebar';
+import { Footer } from '@/app/components/Footer';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 
@@ -37,8 +38,13 @@ export function Layout() {
         <Sidebar onNavigate={() => setIsSidebarOpen(false)} />
       </div>
 
-      {/* Main Content */}
-      <Outlet />
+      {/* Main Content with Footer */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          <Outlet />
+        </div>
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -36,12 +36,14 @@ import { Phase10 } from '@/app/components/projects/Phase10';
 import { DocumentsPage } from '@/app/components/DocumentsPage';
 import { SettingsPage } from '@/app/components/SettingsPage';
 import { LoginPage } from '@/app/components/LoginPage';
+import { RegisterPage } from '@/app/components/RegisterPage';
 import { ReportsPage } from '@/app/components/ReportsPage';
 import { ReleasesPage } from '@/app/components/ReleasesPage';
 import { TeamPage } from '@/app/components/TeamPage';
 import { MilestonesPage } from '@/app/components/MilestonesPage';
 import { MyProjectsPage } from '@/app/components/MyProjectsPage';
 import { VisitorRegisterPage } from '@/app/components/VisitorRegisterPage';
+import { CarePage } from '@/app/components/CarePage';
 
 export const router = createBrowserRouter([
   {
@@ -193,6 +195,10 @@ export const router = createBrowserRouter([
         Component: LoginPage,
       },
       {
+        path: 'register',
+        Component: RegisterPage,
+      },
+      {
         path: 'reports',
         Component: ReportsPage,
       },
@@ -211,6 +217,10 @@ export const router = createBrowserRouter([
       {
         path: 'visitor-register',
         Component: VisitorRegisterPage,
+      },
+      {
+        path: 'care',
+        Component: CarePage,
       },
     ],
   },

@@ -1,10 +1,20 @@
 import { Link } from 'react-router';
 import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import heroImage from 'figma:asset/c21f9f8e28cf8c09e6dbf7b8f2c775b59f88ce80.png';
+
+interface Project {
+  id: string;
+  name: string;
+  projectid?: string;
+  logoUrl?: string;
+}
 
 export function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
     const savedLoginStatus = localStorage.getItem('isLoggedIn');
@@ -15,6 +25,28 @@ export function Home() {
       if (savedUser) {
         setCurrentUser(JSON.parse(savedUser));
       }
+    }
+
+    // Load current project
+    const savedProject = localStorage.getItem('currentProject');
+    if (savedProject) {
+      const project = JSON.parse(savedProject);
+      setCurrentProject(project);
+      
+      // Load logo - prioritize project's logoUrl, then localStorage
+      const projectid = project.projectid || project.id;
+      const projectLogo = project.logoUrl;
+      const savedLogo = localStorage.getItem(`${projectid}_logourl`);
+      
+      if (projectLogo) {
+        setLogoUrl(projectLogo);
+      } else if (savedLogo) {
+        setLogoUrl(savedLogo);
+      } else {
+        setLogoUrl(heroImage);
+      }
+    } else {
+      setLogoUrl(heroImage);
     }
 
     // Listen for login status changes
@@ -60,7 +92,7 @@ export function Home() {
       color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
     },
     { 
-      name: 'USC Life', 
+      name: 'Campus Life', 
       icon: GraduationCap, 
       path: '/personal-pages/usclife',
       description: 'My university experience',
@@ -84,22 +116,17 @@ export function Home() {
 
   return (
     <div className="flex-1 bg-gray-50 p-12 overflow-auto">
-      {/* Welcome Header */}
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold mb-4">
-          {isLoggedIn && currentUser 
-            ? `Welcome back, ${currentUser.username}!` 
-            : 'Welcome to Fusion Project Manager 26.02'}
-        </h1>
-        <p className="text-lg text-gray-600">
-          {isLoggedIn 
-            ? 'Explore your links and navigate through different sections using the sidebar.' 
-            : 'Please log in to access project management features or register for visitor permissions.'}
-        </p>
+      {/* Hero Image */}
+      <div className="w-full mb-12 text-center">
+        <img 
+          src={heroImage} 
+          alt="Fusion Project Manager" 
+          className="h-[350px]"
+        />
       </div>
 
       {/* MyLinks Quick Access - Always visible */}
-      <div className="mb-12">
+      <div className="bg-gradient-to-br from-[#4CBB17]/10 to-white rounded-xl border-2 border-[#4CBB17]/20 p-8 mb-12">
         <h2 className="text-2xl font-semibold mb-6">MyLinks</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {personalPages.map((page, index) => {
@@ -124,7 +151,7 @@ export function Home() {
       </div>
 
       {/* Quick Links */}
-      <div className="mb-12">
+      <div className="bg-gradient-to-br from-[#4CBB17]/10 to-white rounded-xl border-2 border-[#4CBB17]/20 p-8 mb-12">
         <h2 className="text-2xl font-semibold mb-6">Quick Links</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link to="/assignments" className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow">

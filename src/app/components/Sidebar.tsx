@@ -1,4 +1,4 @@
-import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut, ChevronDown, FileBarChart, Package, Users, Calendar, Edit3, Save, X } from 'lucide-react';
+import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut, ChevronDown, FileBarChart, Package, Users, Calendar, Edit3, Save, X, HeartHandshake } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
 import fusionLogo from 'figma:asset/aac5dfb9d0371a7143ad719802888a30e3ea5aed.png';
@@ -53,6 +53,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
     { key: 'home', label: 'Home', path: '/', defaultIcon: Home, section: 'discover' },
     { key: 'myprojects', label: 'MyProjects', path: '/my-projects', defaultIcon: FolderKanban, section: 'discover' },
     { key: 'browse', label: 'Browse', path: '#', defaultIcon: Search, section: 'discover' },
+    { key: 'care', label: 'Care', path: '/care', defaultIcon: HeartHandshake, section: 'discover' },
     { key: 'mylinks', label: 'MyLinks', path: '/personal-pages', defaultIcon: FileText, section: 'library' },
     { key: 'assignments', label: 'Assignments', path: '/assignments', defaultIcon: BookOpen, section: 'library' },
     { key: 'projects', label: 'Project Details', path: '/projects', defaultIcon: FolderKanban, section: 'library' },
@@ -286,7 +287,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       <div className="h-screen text-white flex flex-col" style={{ fontSize: '11pt', width: '248px', backgroundColor: sidebarColor }}>
         {/* Logo */}
         <div className="px-3 pt-3 mb-[30px]">
-          <div className="bg-white rounded flex items-center justify-center w-full h-[170px]">
+          <div className="bg-white rounded flex items-center justify-center w-full h-[185px]">
             <img 
               src={customLogoUrl || (isRenderPage ? fusionLogo : fusionLogo)}
               alt={customLogoUrl ? "Custom Logo" : (isRenderPage ? "Fusion Logo" : "Fusion Logo")}

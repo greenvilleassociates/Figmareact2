@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LogIn, AlertCircle, Loader, Eye, EyeOff, Lock } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 
 interface User {
   id: number;
@@ -223,6 +223,18 @@ export function LoginPage() {
               </>
             )}
           </button>
+
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link 
+                to="/register" 
+                className="text-[#4CBB17] hover:text-[#3DA013] font-semibold hover:underline"
+              >
+                Register here
+              </Link>
+            </p>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
