@@ -67,15 +67,15 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.12",
-    "@vitejs/plugin-react": "4.7.0",
-    "tailwindcss": "4.1.12",
-    "vite": "6.3.5",
-    "yarn-upgrade-all": "^0.7.4"
+    "@tailwindcss/vite": "^4.2.1",
+    "@vitejs/plugin-react": "^5.1.4",
+    "tailwindcss": "^4.2.1",
+    "vite": "^7.3.1",
+    "yarn-upgrade-all": "^0.7.5"
   },
   "peerDependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "peerDependenciesMeta": {
     "react": {
