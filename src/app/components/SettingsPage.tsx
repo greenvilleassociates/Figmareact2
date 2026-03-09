@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, Plus, Trash2, Github, FolderKanban, Image, RefreshCw, Download, Upload, Users, Edit2, Calendar, Palette } from 'lucide-react';
+import { useNavigate } from 'react-router';
 
 interface CustomLink {
   id: string;
@@ -87,6 +88,7 @@ interface Milestone {
 }
 
 export function SettingsPage() {
+  const navigate = useNavigate();
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [newLink, setNewLink] = useState({ name: '', url: '', color: '#4CBB17', icon: '🔗' });
   const [githubConfig, setGithubConfig] = useState<GitHubConfig>({
@@ -131,6 +133,16 @@ export function SettingsPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [sidebarColor, setSidebarColor] = useState('#006622');
   const [logoUrl, setLogoUrl] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
+  const [apiRoot, setApiRoot] = useState('https://api242.onrender.com');
+
+  // Check if user is logged in, redirect if not
+  useEffect(() => {
+    const savedLoginStatus = localStorage.getItem('isLoggedIn');
+    if (!savedLoginStatus || !JSON.parse(savedLoginStatus)) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   // Generate random 8-digit number
   const generateRandomId = () => {
@@ -838,6 +850,55 @@ export function SettingsPage() {
         <div className="flex items-center gap-3 mb-8">
           <Settings className="w-8 h-8 text-[#4CBB17]" />
           <h1 className="text-4xl font-bold">Settings</h1>
+        </div>
+
+        {/* Base Configuration Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+            <Settings className="w-6 h-6 text-[#4CBB17]" />
+            Base Configuration
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Base URL (Published Website)</label>
+              <input
+                type="url"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder="https://yoursite.com"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+              />
+              <p className="text-xs text-gray-500 mt-1">The root URL where your website is published</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">API Root</label>
+              <input
+                type="url"
+                value={apiRoot}
+                onChange={(e) => setApiRoot(e.target.value)}
+                placeholder="https://api242.onrender.com"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+              />
+              <p className="text-xs text-gray-500 mt-1">The root URL for all API endpoints</p>
+            </div>
+            <div className="pt-4 border-t">
+              <h3 className="font-semibold mb-2 text-sm">Derived Endpoints</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <span className="text-gray-600">Users:</span>
+                  <code className="text-xs bg-gray-200 px-2 py-1 rounded">{apiRoot}/users</code>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <span className="text-gray-600">Projects:</span>
+                  <code className="text-xs bg-gray-200 px-2 py-1 rounded">{apiRoot}/api/projects</code>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                  <span className="text-gray-600">User Help:</span>
+                  <code className="text-xs bg-gray-200 px-2 py-1 rounded">{apiRoot}/userhelp</code>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Project Manager Section */}

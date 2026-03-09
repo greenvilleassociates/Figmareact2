@@ -60,25 +60,22 @@ export function RegisterPage() {
     setError('');
 
     try {
-      // Generate userid and useridstring
+      // Generate userid
       const userid = Math.floor(Math.random() * 1000000);
-      const useridstring = `user${userid}`;
       
       // Prepare registration data
       const registrationData = {
         userid: userid,
-        useridstring: useridstring,
         username: formData.username,
+        email: formData.email,
         plainpassword: formData.plainpassword,
+        password: "string",  // API requires this field set to "string"
         firstname: formData.firstname || '',
         lastname: formData.lastname || '',
-        fullname: `${formData.firstname} ${formData.lastname}`.trim() || formData.username,
-        displayname: formData.username,
-        email: formData.email,
-        role: formData.role,
-        defaultinstanceid: '242',
-        defaultshardid: '1'
+        fullname: `${formData.firstname} ${formData.lastname}`.trim() || formData.username
       };
+
+      console.log("Attempting registration with data:", registrationData);
 
       // POST to API
       const response = await fetch('https://api242.onrender.com/users', {
@@ -90,10 +87,24 @@ export function RegisterPage() {
       });
 
       console.log("Registration Response", response);
+      console.log("Registration Status", response.status);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to register user');
+        // Try to get error details
+        let errorMessage = 'Failed to register user';
+        try {
+          const errorData = await response.json();
+          console.log("Error Data", errorData);
+          errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+        } catch (e) {
+          // If response is not JSON, try to get text
+          const errorText = await response.text().catch(() => '');
+          console.log("Error Text", errorText);
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(`${errorMessage} (Status: ${response.status})`);
       }
 
       const newUser = await response.json();
@@ -340,7 +351,8 @@ export function RegisterPage() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
               Registration data is posted to the API at<br />
-              <code className="text-xs bg-gray-100 px-2 py-1 rounded">https://api242.onrender.com/users</code>
+              <code className="text-xs bg-gray-100 px-2 py-1 rounded">https://api242.onrender.com/users</code><br />
+              <span className="text-xs">(Same endpoint as login - GET for login, POST for registration)</span>
             </p>
           </div>
         </div>

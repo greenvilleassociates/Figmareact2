@@ -3,11 +3,13 @@ import { LogIn, AlertCircle, Loader, Eye, EyeOff, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
 
 interface User {
-  id: number;
+  _id?: string; // MongoDB auto-generated ID
+  id?: number; // May also exist in response
   userid: number;
   useridstring: string;
   username: string;
-  plainpassword: string;
+  password: string; // Encrypted password
+  plainpassword: string; // Plain text password
   firstname?: string;
   lastname?: string;
   fullname?: string;
@@ -66,7 +68,8 @@ export function LoginPage() {
         // Successful login - save specific user fields
         localStorage.setItem('isLoggedIn', JSON.stringify(true));
         localStorage.setItem('currentUser', JSON.stringify({
-          uid: user.userid,
+          _id: user._id, // MongoDB record ID (used by /api/ endpoints)
+          uid: user.userid, // User ID field
           username: user.username,
           email: user.email,
           role: user.role

@@ -1,7 +1,7 @@
 
-  # Subpage with GitHub Links
+  # FusionProjectManager
 
-  This is a code bundle for Subpage with GitHub Links. The original project is available at https://www.figma.com/design/gRABcbCVRq1bJNNkHeD4HD/Subpage-with-GitHub-Links.
+  This is a code bundle for FusionProjectManager. The original project is available at https://www.figma.com/design/gRABcbCVRq1bJNNkHeD4HD/FusionProjectManager.
 
   ## Running the code
 

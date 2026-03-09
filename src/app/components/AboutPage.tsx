@@ -22,6 +22,15 @@ export function AboutPage() {
   const [data, setData] = useState<AboutData>(defaultAboutData);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<AboutData>(defaultAboutData);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check login status
+  useEffect(() => {
+    const savedLoginStatus = localStorage.getItem('isLoggedIn');
+    if (savedLoginStatus) {
+      setIsLoggedIn(JSON.parse(savedLoginStatus));
+    }
+  }, []);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -65,7 +74,7 @@ export function AboutPage() {
           <p className="text-gray-600">Author Page</p>
         </div>
         <div className="flex gap-2">
-          {!isEditing ? (
+          {isLoggedIn && !isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
               className="px-4 py-2 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors flex items-center gap-2"

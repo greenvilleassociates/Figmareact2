@@ -74,6 +74,15 @@ export function ProjectDetails() {
   const [selectedLink, setSelectedLink] = useState<ProjectLink | null>(null);
   const [selectedProviderIndex, setSelectedProviderIndex] = useState<number | null>(null);
   const [selectedLinkIndex, setSelectedLinkIndex] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check login status
+  useEffect(() => {
+    const savedLoginStatus = localStorage.getItem('isLoggedIn');
+    if (savedLoginStatus) {
+      setIsLoggedIn(JSON.parse(savedLoginStatus));
+    }
+  }, []);
 
   // Load hosting information from localStorage
   useEffect(() => {
@@ -212,17 +221,19 @@ export function ProjectDetails() {
       {/* Header */}
       <div className="flex items-center justify-between mb-12">
         <h1 className="text-4xl font-bold">HOSTING INFORMATION</h1>
-        <button
-          onClick={() => setEditMode(!editMode)}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-            editMode 
-              ? 'bg-[#4CBB17] text-white hover:bg-[#3DA013]' 
-              : 'bg-white border-2 border-[#4CBB17] text-[#4CBB17] hover:bg-[#4CBB17]/10'
-          }`}
-        >
-          <Edit2 className="w-4 h-4" />
-          {editMode ? 'Done Editing' : 'Edit Mode'}
-        </button>
+        {isLoggedIn && (
+          <button
+            onClick={() => setEditMode(!editMode)}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+              editMode 
+                ? 'bg-[#4CBB17] text-white hover:bg-[#3DA013]' 
+                : 'bg-white border-2 border-[#4CBB17] text-[#4CBB17] hover:bg-[#4CBB17]/10'
+            }`}
+          >
+            <Edit2 className="w-4 h-4" />
+            {editMode ? 'Done Editing' : 'Edit Mode'}
+          </button>
+        )}
       </div>
 
       {/* Hosting Providers */}

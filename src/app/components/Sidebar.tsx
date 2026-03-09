@@ -278,9 +278,15 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
   const isRenderPage = location.pathname === '/render-react-info';
 
-  // Filter nav items by section
+  // Filter nav items by section and login status
   const discoverItems = navItems.filter(item => item.section === 'discover');
-  const libraryItems = navItems.filter(item => item.section === 'library');
+  const libraryItems = navItems.filter(item => {
+    // Hide Settings page when not logged in
+    if (item.key === 'settings' && !isLoggedIn) {
+      return false;
+    }
+    return item.section === 'library';
+  });
 
   return (
     <>
@@ -373,7 +379,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               ))}
               
               {/* Login/Logout */}
-              <li>
+              <li key="login-logout">
                 {!isLoggedIn ? (
                   <Link
                     to="/login"
@@ -401,23 +407,38 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
           {/* Library Section */}
           <div>
-            <h2 className="text-xs mb-1.5 px-3 opacity-75">Library</h2>
+            <div className="flex items-center justify-between px-3 mb-1.5">
+              <h2 className="text-xs opacity-75">Library</h2>
+              {!currentProject && (
+                <span className="text-[10px] opacity-60 italic">Select project</span>
+              )}
+            </div>
             <ul className="space-y-0.5">
               {libraryItems.map((item) => (
                 <li key={item.key} className="relative group">
-                  <Link 
-                    to={item.path} 
-                    onClick={onNavigate}
-                    className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm ${
-                      isActive(item.path) ? 'bg-white text-black' : 'hover:bg-white/10'
-                    } ${isEditMode ? 'pr-10' : ''}`}
-                  >
-                    {renderIcon(item)}
-                    <span>{item.label}</span>
-                  </Link>
+                  {currentProject ? (
+                    <Link 
+                      to={item.path} 
+                      onClick={onNavigate}
+                      className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm ${
+                        isActive(item.path) ? 'bg-white text-black' : 'hover:bg-white/10'
+                      } ${isEditMode ? 'pr-10' : ''}`}
+                    >
+                      {renderIcon(item)}
+                      <span>{item.label}</span>
+                    </Link>
+                  ) : (
+                    <div
+                      className={`flex items-center gap-3 px-3 py-1.5 rounded text-sm opacity-40 cursor-not-allowed ${isEditMode ? 'pr-10' : ''}`}
+                      title="Please select a project to access Library features"
+                    >
+                      {renderIcon(item)}
+                      <span>{item.label}</span>
+                    </div>
+                  )}
                   
                   {/* Edit Button */}
-                  {isEditMode && (
+                  {isEditMode && currentProject && (
                     <button
                       onClick={() => openIconEditor(item.key, item.label)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-white/20 hover:bg-white/30 rounded opacity-opacity-0 group-hover:opacity-100 transition-opacity"
