@@ -7,7 +7,7 @@ export function GreenvillePage() {
       </div>
       <div className="flex-1">
         <iframe
-          src="https://greenvilleassociates.com"
+          src="https://greenvilleassociates.com" height="800px" width="800px"
           className="w-full h-full border-0"
           title="Greenville Associates"
         />
