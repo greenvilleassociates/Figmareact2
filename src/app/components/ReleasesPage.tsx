@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Package, Plus, Edit2, Trash2, ExternalLink, Save, X, Link as LinkIcon } from 'lucide-react';
+import { Package, Plus, Edit2, Trash2, Save, X, ExternalLink, Upload, Link as LinkIcon } from 'lucide-react';
+import { Link } from 'react-router';
+import { getStorageItem } from '../utils/storageHelper';
 
 interface Release {
   id: string;
@@ -56,12 +58,12 @@ export function ReleasesPage() {
   }, []);
 
   const loadReleases = (projectid: string) => {
-    const saved = localStorage.getItem(`${projectid}_releases`);
+    const saved = getStorageItem(`${projectid}_releases`);
     if (saved) {
       setReleases(JSON.parse(saved));
     }
 
-    const savedCustomProviders = localStorage.getItem(`${projectid}_custom_providers`);
+    const savedCustomProviders = getStorageItem(`${projectid}_custom_providers`);
     if (savedCustomProviders) {
       setCustomProviders(JSON.parse(savedCustomProviders));
     }

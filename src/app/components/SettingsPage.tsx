@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Settings, Plus, Trash2, Github, FolderKanban, Image, RefreshCw, Download, Upload, Users, Edit2, Calendar, Palette } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { saveAssignment, saveProjectPhase } from '../utils/taskSync';
+import { resetGuestConfiguration } from '../utils/guestConfig';
+import { getStorageItem } from '../utils/storageHelper';
 
 interface CustomLink {
   id: string;
@@ -166,6 +169,34 @@ export function SettingsPage() {
       localStorage.setItem(`${projectConfig.projectid}_logourl`, url);
       // Trigger sidebar update
       window.dispatchEvent(new Event('storage'));
+    }
+  };
+
+  // Reset guest configuration
+  const handleResetGuestConfiguration = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to reset the guest configuration? This will clear all guest project data and reload the default template.'
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      const success = await resetGuestConfiguration();
+      
+      if (success) {
+        alert('Guest configuration has been reset successfully! The default project has been reloaded.');
+        
+        // Trigger update
+        window.dispatchEvent(new Event('storage'));
+        
+        // Reload page to reflect changes
+        window.location.reload();
+      } else {
+        alert('Failed to reset guest configuration. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error resetting guest configuration:', err);
+      alert('Failed to reset guest configuration. Please try again.');
     }
   };
 
@@ -625,7 +656,7 @@ export function SettingsPage() {
   };
 
   // Initialize assignment data with defaults
-  const initializeAssignmentData = (projectid: string) => {
+  const initializeAssignmentData = async (projectid: string) => {
     const defaultAssignments: AssignmentData[] = [];
     for (let i = 1; i <= 20; i++) {
       const assignment: AssignmentData = {
@@ -636,13 +667,14 @@ export function SettingsPage() {
         imageUrl: `https://via.placeholder.com/400x300?text=Assignment+${i}`
       };
       defaultAssignments.push(assignment);
-      localStorage.setItem(`assignment_${projectid}_${i}`, JSON.stringify(assignment));
+      // Save to both localStorage and API
+      await saveAssignment(projectid, i, assignment);
     }
     setAssignmentData(defaultAssignments);
   };
 
   // Initialize project phase data with defaults
-  const initializeProjectPhaseData = (projectid: string) => {
+  const initializeProjectPhaseData = async (projectid: string) => {
     const defaultPhases: ProjectPhaseData[] = [];
     const statuses = ['Completed', 'Completed', 'Completed', 'Completed', 'In Progress', 'Pending', 'Pending', 'Pending', 'Pending', 'Pending'];
     for (let i = 1; i <= 10; i++) {
@@ -654,7 +686,8 @@ export function SettingsPage() {
         imageUrl: `https://via.placeholder.com/400x300?text=Phase+${i}`
       };
       defaultPhases.push(phase);
-      localStorage.setItem(`project_phase_${projectid}_${i}`, JSON.stringify(phase));
+      // Save to both localStorage and API
+      await saveProjectPhase(projectid, i, phase);
     }
     setProjectPhaseData(defaultPhases);
   };
@@ -669,7 +702,7 @@ export function SettingsPage() {
   const loadAssignmentData = (projectid: string) => {
     const assignments: AssignmentData[] = [];
     for (let i = 1; i <= 20; i++) {
-      const saved = localStorage.getItem(`assignment_${projectid}_${i}`);
+      const saved = getStorageItem(`assignment_${projectid}_${i}`);
       if (saved) {
         assignments.push(JSON.parse(saved));
       }
@@ -681,7 +714,7 @@ export function SettingsPage() {
   const loadProjectPhaseData = (projectid: string) => {
     const phases: ProjectPhaseData[] = [];
     for (let i = 1; i <= 10; i++) {
-      const saved = localStorage.getItem(`project_phase_${projectid}_${i}`);
+      const saved = getStorageItem(`project_phase_${projectid}_${i}`);
       if (saved) {
         phases.push(JSON.parse(saved));
       }
@@ -690,24 +723,26 @@ export function SettingsPage() {
   };
 
   // Update assignment data
-  const handleUpdateAssignmentData = (id: number, field: keyof AssignmentData, value: string) => {
+  const handleUpdateAssignmentData = async (id: number, field: keyof AssignmentData, value: string) => {
     const assignment = assignmentData.find(a => a.id === id);
     if (assignment && projectConfig.projectid) {
       const updated = { ...assignment, [field]: value };
       const updatedData = assignmentData.map(a => a.id === id ? updated : a);
       setAssignmentData(updatedData);
-      localStorage.setItem(`assignment_${projectConfig.projectid}_${id}`, JSON.stringify(updated));
+      // Sync to both localStorage and API
+      await saveAssignment(projectConfig.projectid, id, updated);
     }
   };
 
   // Update project phase data
-  const handleUpdateProjectPhaseData = (id: number, field: keyof ProjectPhaseData, value: string) => {
+  const handleUpdateProjectPhaseData = async (id: number, field: keyof ProjectPhaseData, value: string) => {
     const phase = projectPhaseData.find(p => p.id === id);
     if (phase && projectConfig.projectid) {
       const updated = { ...phase, [field]: value };
       const updatedData = projectPhaseData.map(p => p.id === id ? updated : p);
       setProjectPhaseData(updatedData);
-      localStorage.setItem(`project_phase_${projectConfig.projectid}_${id}`, JSON.stringify(updated));
+      // Sync to both localStorage and API
+      await saveProjectPhase(projectConfig.projectid, id, updated);
     }
   };
 
@@ -2052,6 +2087,27 @@ export function SettingsPage() {
                     Save Logo URL
                   </button>
                 </div>
+              </div>
+
+              {/* Guest Configuration Management */}
+              <div className="mt-6 pt-6 border-t">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Guest Configuration Management
+                </label>
+                
+                <div className="mb-4 p-3 bg-amber-50 border-l-4 border-amber-500 rounded">
+                  <p className="text-sm text-amber-800">
+                    Reset the default guest project configuration. This will clear all guest project data and reload from the default template on the next guest login or immediately if you're logged in as a guest.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleResetGuestConfiguration}
+                  className="px-6 py-3 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors flex items-center gap-2 font-medium"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Reset Guest Configuration
+                </button>
               </div>
             </div>
           </div>

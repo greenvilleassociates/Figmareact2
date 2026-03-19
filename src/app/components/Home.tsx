@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye } from 'lucide-react';
+import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import heroImage from 'figma:asset/c21f9f8e28cf8c09e6dbf7b8f2c775b59f88ce80.png';
 
@@ -15,16 +15,23 @@ export function Home() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [logoUrl, setLogoUrl] = useState('');
+  const [isGuestMode, setIsGuestMode] = useState(false);
 
   useEffect(() => {
     const savedLoginStatus = localStorage.getItem('isLoggedIn');
     const savedUser = localStorage.getItem('currentUser');
+    const guestMode = localStorage.getItem('isGuestMode');
     
     if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
       setIsLoggedIn(true);
       if (savedUser) {
         setCurrentUser(JSON.parse(savedUser));
       }
+    }
+
+    // Check for guest mode
+    if (guestMode && JSON.parse(guestMode)) {
+      setIsGuestMode(true);
     }
 
     // Load current project
@@ -53,6 +60,7 @@ export function Home() {
     const handleLoginChange = () => {
       const savedLoginStatus = localStorage.getItem('isLoggedIn');
       const savedUser = localStorage.getItem('currentUser');
+      const guestMode = localStorage.getItem('isGuestMode');
       
       if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
         setIsLoggedIn(true);
@@ -62,6 +70,12 @@ export function Home() {
       } else {
         setIsLoggedIn(false);
         setCurrentUser(null);
+      }
+
+      if (guestMode && JSON.parse(guestMode)) {
+        setIsGuestMode(true);
+      } else {
+        setIsGuestMode(false);
       }
     };
 
@@ -124,6 +138,39 @@ export function Home() {
           className="h-[350px]"
         />
       </div>
+
+      {/* Guest Mode Banner */}
+      {isGuestMode && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-6 mb-12">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-amber-900 mb-2">Guest Mode - Read-Only Access</h3>
+              <p className="text-amber-800 mb-3">
+                You are currently viewing this site in guest mode with read-only permissions. You can explore the homepage and view content, but editing features are disabled.
+              </p>
+              <div className="flex gap-3">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors text-sm font-semibold"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Login for Full Access
+                </Link>
+                <Link
+                  to="/register"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-amber-300 text-amber-900 rounded-lg hover:bg-amber-50 transition-colors text-sm font-semibold"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Create Account
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MyLinks Quick Access - Always visible */}
       <div className="bg-gradient-to-br from-[#4CBB17]/10 to-white rounded-xl border-2 border-[#4CBB17]/20 p-8 mb-12">

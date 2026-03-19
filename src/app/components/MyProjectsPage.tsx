@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FolderKanban, Users, Code, Globe, ExternalLink, Calendar, User, Building2, RefreshCw, AlertCircle, CheckCircle2, Plus, X, Edit } from 'lucide-react';
+import { initializeDefaultAssignments, initializeDefaultProjectPhases } from '../utils/taskSync';
 
 interface Project {
   id: string;
@@ -61,22 +62,6 @@ export function MyProjectsPage() {
       Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
     ).join('');
     return timestamp + randomBytes;
-  };
-
-  // Initialize assignment data with defaults
-  const initializeAssignmentData = (projectid: string) => {
-    const defaultAssignments: any[] = [];
-    for (let i = 1; i <= 20; i++) {
-      const assignment = {
-        id: i,
-        title: `Assignment ${i}`,
-        subtitle: `Subtitle for Assignment ${i}`,
-        description: `Description for Assignment ${i}`,
-        imageUrl: `https://via.placeholder.com/400x300?text=Assignment+${i}`
-      };
-      defaultAssignments.push(assignment);
-      localStorage.setItem(`assignment_${projectid}_${i}`, JSON.stringify(assignment));
-    }
   };
 
   // Initialize project phase data with defaults
@@ -284,7 +269,7 @@ export function MyProjectsPage() {
       console.log('Project created:', createdProject);
 
       // Initialize default assignment data
-      initializeAssignmentData(generatedProjectId);
+      initializeDefaultAssignments(generatedProjectId);
       
       // Initialize default project phase data
       initializeProjectPhaseData(generatedProjectId);

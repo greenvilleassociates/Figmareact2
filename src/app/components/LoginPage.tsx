@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LogIn, AlertCircle, Loader, Eye, EyeOff, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
+import { loadGuestConfiguration } from '../utils/guestConfig';
 
 interface User {
   _id?: string; // MongoDB auto-generated ID
@@ -48,6 +49,33 @@ export function LoginPage() {
     setError('');
 
     try {
+      // Check for guest login first
+      if (username.toLowerCase() === 'guest' && password === 'guest') {
+        // Guest login - bypass API authentication
+        localStorage.setItem('isLoggedIn', JSON.stringify(true));
+        localStorage.setItem('isGuestMode', JSON.stringify(true));
+        localStorage.setItem('currentUser', JSON.stringify({
+          uid: 0,
+          username: 'Guest',
+          email: 'guest@example.com',
+          role: 'guest'
+        }));
+        
+        // Check if guest configuration already exists
+        await loadGuestConfiguration();
+        
+        // Dispatch event for sidebar to update
+        window.dispatchEvent(new Event('loginStatusChanged'));
+        
+        setIsLoggedIn(true);
+        // Redirect to home page after successful login
+        setTimeout(() => {
+          navigate('/');
+        }, 500);
+        setLoading(false);
+        return;
+      }
+
       // Fetch users from the API
       const response = await fetch('https://api242.onrender.com/users');
       
@@ -97,7 +125,7 @@ export function LoginPage() {
   const handleLogout = () => {
     localStorage.setItem('isLoggedIn', JSON.stringify(false));
     localStorage.removeItem('currentUser');
-    localStorage.removeItem('currentProject');
+    localStorage.removeItem('isGuestMode');
     window.dispatchEvent(new Event('loginStatusChanged'));
     setIsLoggedIn(false);
     setUsername('');
@@ -236,6 +264,12 @@ export function LoginPage() {
               >
                 Register here
               </Link>
+            </p>
+          </div>
+
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 text-center">
+              <strong>💡 Try Guest Mode:</strong> Login with username <code className="bg-blue-100 px-1.5 py-0.5 rounded">guest</code> and password <code className="bg-blue-100 px-1.5 py-0.5 rounded">guest</code> for a quick demo!
             </p>
           </div>
 

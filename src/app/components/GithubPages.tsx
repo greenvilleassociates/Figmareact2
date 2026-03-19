@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Edit2, Save, X } from 'lucide-react';
+import { Github, Globe, ExternalLink, Edit2, Save, X } from 'lucide-react';
+import { getStorageItem } from '../utils/storageHelper';
 
 interface GitHubConfig {
   profileUrl: string;

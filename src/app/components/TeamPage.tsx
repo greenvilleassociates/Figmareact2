@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, Mail, Phone, Briefcase, UserPlus, Edit2, Trash2, Save, X } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Save, X, Mail, Phone, Briefcase, UserPlus } from 'lucide-react';
 import { Link } from 'react-router';
+import { getStorageItem, setStorageItem, isGuestMode } from '../utils/storageHelper';
 
 interface TeamMember {
   id: string;
@@ -9,6 +10,8 @@ interface TeamMember {
   phone: string;
   role: 'developer' | 'project-manager' | 'stakeholder';
   type?: string; // For stakeholders: marketing, finance, hr, etc.
+  projectid?: string;
+  userid?: string;
 }
 
 interface TeamData {
@@ -17,6 +20,7 @@ interface TeamData {
   stakeholders: TeamMember[];
 }
 
+const API_BASE_URL = 'https://api242.onrender.com';
 const MAX_PROJECT_MANAGERS = 3;
 const MAX_STAKEHOLDERS = 10;
 
@@ -36,6 +40,8 @@ export function TeamPage() {
     phone: '',
     type: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const savedProjectConfig = localStorage.getItem('project_config');
@@ -46,96 +52,336 @@ export function TeamPage() {
     }
   }, []);
 
-  const loadTeamData = (projectid: string) => {
-    const saved = localStorage.getItem(`${projectid}_team`);
-    if (saved) {
-      setTeamData(JSON.parse(saved));
+  const loadTeamData = async (projectid: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    // If guest mode, load from storage only
+    if (isGuestMode()) {
+      const saved = getStorageItem(`${projectid}_team`);
+      if (saved) {
+        setTeamData(JSON.parse(saved));
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // For logged-in users, try to fetch from API first
+    try {
+      const response = await fetch(`${API_BASE_URL}/usergroups?projectid=${projectid}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Transform API data to TeamData structure
+        // API returns array of usergroup records with role field
+        const transformedData: TeamData = {
+          developers: [],
+          projectManagers: [],
+          stakeholders: []
+        };
+
+        if (Array.isArray(data)) {
+          data.forEach((member: any) => {
+            const teamMember: TeamMember = {
+              id: member.id || member.userid || Date.now().toString(),
+              name: member.name || member.username || '',
+              email: member.email || '',
+              phone: member.phone || '',
+              role: member.role || 'developer',
+              type: member.type,
+              projectid: member.projectid,
+              userid: member.userid
+            };
+
+            if (member.role === 'developer') {
+              transformedData.developers.push(teamMember);
+            } else if (member.role === 'project-manager') {
+              transformedData.projectManagers.push(teamMember);
+            } else if (member.role === 'stakeholder') {
+              transformedData.stakeholders.push(teamMember);
+            }
+          });
+        }
+
+        setTeamData(transformedData);
+        // Cache in localStorage
+        setStorageItem(`${projectid}_team`, JSON.stringify(transformedData));
+      } else {
+        // If API fails, fall back to localStorage
+        console.warn('Failed to fetch from API, using localStorage');
+        const saved = getStorageItem(`${projectid}_team`);
+        if (saved) {
+          setTeamData(JSON.parse(saved));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching team data:', err);
+      // Fall back to localStorage on error
+      const saved = getStorageItem(`${projectid}_team`);
+      if (saved) {
+        setTeamData(JSON.parse(saved));
+      }
+      setError('Failed to load team data from server. Showing cached data.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const saveTeamData = (data: TeamData) => {
-    if (projectId) {
-      localStorage.setItem(`${projectId}_team`, JSON.stringify(data));
-      setTeamData(data);
-    }
+    if (!projectId) return;
+    
+    setStorageItem(`${projectId}_team`, JSON.stringify(data));
+    setTeamData(data);
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     const newMember: TeamMember = {
       id: Date.now().toString(),
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       role: selectedRole,
-      type: selectedRole === 'stakeholder' ? formData.type : undefined
+      type: selectedRole === 'stakeholder' ? formData.type : undefined,
+      projectid: projectId
     };
 
-    const updatedData = { ...teamData };
+    // Check limits
+    if (selectedRole === 'project-manager' && teamData.projectManagers.length >= MAX_PROJECT_MANAGERS) {
+      alert(`Maximum of ${MAX_PROJECT_MANAGERS} project managers allowed.`);
+      return;
+    }
     
-    if (selectedRole === 'developer') {
-      updatedData.developers = [...updatedData.developers, newMember];
-    } else if (selectedRole === 'project-manager') {
-      if (updatedData.projectManagers.length < MAX_PROJECT_MANAGERS) {
+    if (selectedRole === 'stakeholder' && teamData.stakeholders.length >= MAX_STAKEHOLDERS) {
+      alert(`Maximum of ${MAX_STAKEHOLDERS} stakeholders allowed.`);
+      return;
+    }
+
+    if (isGuestMode()) {
+      // Guest mode: add locally only
+      const updatedData = { ...teamData };
+      
+      if (selectedRole === 'developer') {
+        updatedData.developers = [...updatedData.developers, newMember];
+      } else if (selectedRole === 'project-manager') {
         updatedData.projectManagers = [...updatedData.projectManagers, newMember];
-      } else {
-        alert(`Maximum ${MAX_PROJECT_MANAGERS} project managers allowed`);
-        return;
-      }
-    } else if (selectedRole === 'stakeholder') {
-      if (updatedData.stakeholders.length < MAX_STAKEHOLDERS) {
+      } else if (selectedRole === 'stakeholder') {
         updatedData.stakeholders = [...updatedData.stakeholders, newMember];
-      } else {
-        alert(`Maximum ${MAX_STAKEHOLDERS} stakeholders allowed`);
-        return;
       }
+
+      saveTeamData(updatedData);
+      resetForm();
+      return;
     }
 
-    saveTeamData(updatedData);
-    resetForm();
+    // Logged-in users: POST to API
+    try {
+      const response = await fetch(`${API_BASE_URL}/usergroups`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          projectid: projectId,
+          userid: newMember.id, // Can be updated with actual user ID if needed
+          name: newMember.name,
+          username: newMember.name, // Can be different if needed
+          email: newMember.email,
+          phone: newMember.phone,
+          role: newMember.role,
+          type: newMember.type
+        })
+      });
+
+      if (response.ok) {
+        const createdMember = await response.json();
+        
+        const updatedData = { ...teamData };
+        const memberToAdd = {
+          ...newMember,
+          id: createdMember.id || createdMember.userid || newMember.id
+        };
+
+        if (selectedRole === 'developer') {
+          updatedData.developers = [...updatedData.developers, memberToAdd];
+        } else if (selectedRole === 'project-manager') {
+          updatedData.projectManagers = [...updatedData.projectManagers, memberToAdd];
+        } else if (selectedRole === 'stakeholder') {
+          updatedData.stakeholders = [...updatedData.stakeholders, memberToAdd];
+        }
+
+        saveTeamData(updatedData);
+        resetForm();
+      } else {
+        throw new Error('Failed to add team member');
+      }
+    } catch (err) {
+      console.error('Error adding team member:', err);
+      setError('Failed to add team member. Please try again.');
+      
+      // Still add locally as fallback
+      const updatedData = { ...teamData };
+      
+      if (selectedRole === 'developer') {
+        updatedData.developers = [...updatedData.developers, newMember];
+      } else if (selectedRole === 'project-manager') {
+        updatedData.projectManagers = [...updatedData.projectManagers, newMember];
+      } else if (selectedRole === 'stakeholder') {
+        updatedData.stakeholders = [...updatedData.stakeholders, newMember];
+      }
+
+      saveTeamData(updatedData);
+      resetForm();
+    }
   };
 
-  const handleUpdateMember = () => {
-    if (!editingMember) return;
+  const handleUpdateMember = async (member: TeamMember) => {
+    if (isGuestMode()) {
+      // Guest mode: update locally only
+      const updatedData = { ...teamData };
+      
+      if (member.role === 'developer') {
+        updatedData.developers = updatedData.developers.map(m =>
+          m.id === member.id ? member : m
+        );
+      } else if (member.role === 'project-manager') {
+        updatedData.projectManagers = updatedData.projectManagers.map(m =>
+          m.id === member.id ? member : m
+        );
+      } else if (member.role === 'stakeholder') {
+        updatedData.stakeholders = updatedData.stakeholders.map(m =>
+          m.id === member.id ? member : m
+        );
+      }
 
-    const updatedData = { ...teamData };
-    const updateMemberInArray = (members: TeamMember[]) => 
-      members.map(m => m.id === editingMember.id 
-        ? { 
-            ...m, 
-            name: formData.name, 
-            email: formData.email, 
-            phone: formData.phone,
-            type: editingMember.role === 'stakeholder' ? formData.type : undefined
-          }
-        : m
-      );
-
-    if (editingMember.role === 'developer') {
-      updatedData.developers = updateMemberInArray(updatedData.developers);
-    } else if (editingMember.role === 'project-manager') {
-      updatedData.projectManagers = updateMemberInArray(updatedData.projectManagers);
-    } else if (editingMember.role === 'stakeholder') {
-      updatedData.stakeholders = updateMemberInArray(updatedData.stakeholders);
+      saveTeamData(updatedData);
+      return;
     }
 
-    saveTeamData(updatedData);
-    resetForm();
+    // Logged-in users: PUT to API
+    try {
+      const response = await fetch(`${API_BASE_URL}/usergroups/${member.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          projectid: projectId,
+          userid: member.userid || member.id,
+          name: member.name,
+          username: member.name,
+          email: member.email,
+          phone: member.phone,
+          role: member.role,
+          type: member.type
+        })
+      });
+
+      if (response.ok) {
+        const updatedData = { ...teamData };
+        
+        if (member.role === 'developer') {
+          updatedData.developers = updatedData.developers.map(m =>
+            m.id === member.id ? member : m
+          );
+        } else if (member.role === 'project-manager') {
+          updatedData.projectManagers = updatedData.projectManagers.map(m =>
+            m.id === member.id ? member : m
+          );
+        } else if (member.role === 'stakeholder') {
+          updatedData.stakeholders = updatedData.stakeholders.map(m =>
+            m.id === member.id ? member : m
+          );
+        }
+
+        saveTeamData(updatedData);
+      } else {
+        throw new Error('Failed to update team member');
+      }
+    } catch (err) {
+      console.error('Error updating team member:', err);
+      setError('Failed to update team member. Please try again.');
+      
+      // Still update locally as fallback
+      const updatedData = { ...teamData };
+      
+      if (member.role === 'developer') {
+        updatedData.developers = updatedData.developers.map(m =>
+          m.id === member.id ? member : m
+        );
+      } else if (member.role === 'project-manager') {
+        updatedData.projectManagers = updatedData.projectManagers.map(m =>
+          m.id === member.id ? member : m
+        );
+      } else if (member.role === 'stakeholder') {
+        updatedData.stakeholders = updatedData.stakeholders.map(m =>
+          m.id === member.id ? member : m
+        );
+      }
+
+      saveTeamData(updatedData);
+    }
   };
 
-  const handleDeleteMember = (member: TeamMember) => {
-    if (!confirm(`Are you sure you want to remove ${member.name} from the team?`)) return;
-
-    const updatedData = { ...teamData };
-    
-    if (member.role === 'developer') {
-      updatedData.developers = updatedData.developers.filter(m => m.id !== member.id);
-    } else if (member.role === 'project-manager') {
-      updatedData.projectManagers = updatedData.projectManagers.filter(m => m.id !== member.id);
-    } else if (member.role === 'stakeholder') {
-      updatedData.stakeholders = updatedData.stakeholders.filter(m => m.id !== member.id);
+  const handleDeleteMember = async (id: string, role: 'developer' | 'project-manager' | 'stakeholder') => {
+    if (!confirm('Are you sure you want to remove this team member?')) {
+      return;
     }
 
-    saveTeamData(updatedData);
+    if (isGuestMode()) {
+      // Guest mode: delete locally only
+      const updatedData = { ...teamData };
+      
+      if (role === 'developer') {
+        updatedData.developers = updatedData.developers.filter(m => m.id !== id);
+      } else if (role === 'project-manager') {
+        updatedData.projectManagers = updatedData.projectManagers.filter(m => m.id !== id);
+      } else if (role === 'stakeholder') {
+        updatedData.stakeholders = updatedData.stakeholders.filter(m => m.id !== id);
+      }
+
+      saveTeamData(updatedData);
+      return;
+    }
+
+    // Logged-in users: DELETE from API
+    try {
+      const response = await fetch(`${API_BASE_URL}/usergroups/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const updatedData = { ...teamData };
+        
+        if (role === 'developer') {
+          updatedData.developers = updatedData.developers.filter(m => m.id !== id);
+        } else if (role === 'project-manager') {
+          updatedData.projectManagers = updatedData.projectManagers.filter(m => m.id !== id);
+        } else if (role === 'stakeholder') {
+          updatedData.stakeholders = updatedData.stakeholders.filter(m => m.id !== id);
+        }
+
+        saveTeamData(updatedData);
+      } else {
+        throw new Error('Failed to delete team member');
+      }
+    } catch (err) {
+      console.error('Error deleting team member:', err);
+      setError('Failed to delete team member. Please try again.');
+      
+      // Still delete locally as fallback
+      const updatedData = { ...teamData };
+      
+      if (role === 'developer') {
+        updatedData.developers = updatedData.developers.filter(m => m.id !== id);
+      } else if (role === 'project-manager') {
+        updatedData.projectManagers = updatedData.projectManagers.filter(m => m.id !== id);
+      } else if (role === 'stakeholder') {
+        updatedData.stakeholders = updatedData.stakeholders.filter(m => m.id !== id);
+      }
+
+      saveTeamData(updatedData);
+    }
   };
 
   const handleEdit = (member: TeamMember) => {
@@ -320,7 +566,7 @@ export function TeamPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteMember(member)}
+                            onClick={() => handleDeleteMember(member.id, 'developer')}
                             className="text-red-600 hover:bg-red-50 p-2 rounded"
                             title="Delete"
                           >
@@ -406,7 +652,7 @@ export function TeamPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteMember(member)}
+                            onClick={() => handleDeleteMember(member.id, 'project-manager')}
                             className="text-red-600 hover:bg-red-50 p-2 rounded"
                             title="Delete"
                           >
@@ -498,7 +744,7 @@ export function TeamPage() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteMember(member)}
+                            onClick={() => handleDeleteMember(member.id, 'stakeholder')}
                             className="text-red-600 hover:bg-red-50 p-2 rounded"
                             title="Delete"
                           >
@@ -534,7 +780,7 @@ export function TeamPage() {
             <form onSubmit={(e) => {
               e.preventDefault();
               if (editingMember) {
-                handleUpdateMember();
+                handleUpdateMember(editingMember);
               } else {
                 handleAddMember();
               }

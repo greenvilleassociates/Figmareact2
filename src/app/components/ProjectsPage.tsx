@@ -2,6 +2,8 @@ import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d
 import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
 import { Edit2, Save, X, Image as ImageIcon } from 'lucide-react';
+import { saveProjectPhase } from '../utils/taskSync';
+import { getStorageItem } from '../utils/storageHelper';
 
 interface ProjectImage {
   id: number;
@@ -28,8 +30,8 @@ export function ProjectsPage() {
 
   // Load custom images and project phase data from localStorage
   useEffect(() => {
-    const savedImages = localStorage.getItem('projectImages');
-    const savedProjectConfig = localStorage.getItem('project_config');
+    const savedImages = getStorageItem('projectImages');
+    const savedProjectConfig = getStorageItem('project_config');
     
     if (savedImages) {
       setCustomImages(JSON.parse(savedImages));
@@ -46,7 +48,7 @@ export function ProjectsPage() {
     const phases: ProjectPhaseData[] = [];
     // Load all 10 project phases
     for (let i = 1; i <= 10; i++) {
-      const saved = localStorage.getItem(`project_phase_${projectid}_${i}`);
+      const saved = getStorageItem(`project_phase_${projectid}_${i}`);
       if (saved) {
         phases.push(JSON.parse(saved));
       } else {
@@ -124,7 +126,7 @@ export function ProjectsPage() {
   };
 
   // Save inline edits
-  const handleSaveInlineEdit = (e: React.MouseEvent) => {
+  const handleSaveInlineEdit = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -133,7 +135,8 @@ export function ProjectsPage() {
         p.id === editForm.id ? editForm : p
       );
       setProjectPhaseData(updatedData);
-      localStorage.setItem(`project_phase_${projectId}_${editForm.id}`, JSON.stringify(editForm));
+      // Sync to both localStorage and API
+      await saveProjectPhase(projectId, editForm.id, editForm);
       setEditingPhase(null);
       setEditForm(null);
     }
@@ -156,13 +159,14 @@ export function ProjectsPage() {
   };
 
   // Save detailed changes
-  const handleSaveDetailedChanges = () => {
+  const handleSaveDetailedChanges = async () => {
     if (selectedPhase && projectId) {
       const updatedData = projectPhaseData.map(p => 
         p.id === selectedPhase.id ? selectedPhase : p
       );
       setProjectPhaseData(updatedData);
-      localStorage.setItem(`project_phase_${projectId}_${selectedPhase.id}`, JSON.stringify(selectedPhase));
+      // Sync to both localStorage and API
+      await saveProjectPhase(projectId, selectedPhase.id, selectedPhase);
       setShowDetailModal(false);
       setSelectedPhase(null);
     }

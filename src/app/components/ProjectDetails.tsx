@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
+import { Server, Globe, Database, Link as LinkIcon, ExternalLink, Save, Edit2, X, Plus, Trash2 } from 'lucide-react';
+import { Link } from 'react-router';
+import { getStorageItem } from '../utils/storageHelper';
 
 interface ProjectLink {
   label: string;

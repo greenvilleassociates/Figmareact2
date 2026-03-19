@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Plus, Edit2, Trash2, Save, X, Flag, Clock } from 'lucide-react';
 import { Link } from 'react-router';
+import { getStorageItem, setStorageItem, isGuestMode } from '../utils/storageHelper';
 
 interface Milestone {
-  id: string;
-  date: string;
-  description: string;
-  type: string;
+  id: string | number;
+  projectId?: string | number;
+  title: string;
+  description?: string;
+  dueDate: string;
+  completed: boolean;
+  completedAt?: string;
+  assignedTo?: string | number;
+  status: 'pending' | 'in-progress' | 'completed' | 'delayed';
+  type: string; // For UI categorization (Sprint, Release, etc.)
 }
+
+const API_BASE_URL = 'https://api242.onrender.com';
 
 const MILESTONE_TYPES = [
   'Sprint',
@@ -21,18 +30,32 @@ const MILESTONE_TYPES = [
   'Other'
 ];
 
+const MILESTONE_STATUSES = [
+  { value: 'pending', label: 'Pending', color: 'gray' },
+  { value: 'in-progress', label: 'In Progress', color: 'blue' },
+  { value: 'completed', label: 'Completed', color: 'green' },
+  { value: 'delayed', label: 'Delayed', color: 'red' }
+];
+
 export function MilestonesPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [projectId, setProjectId] = useState<string>('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [formData, setFormData] = useState({
-    date: '',
+    title: '',
     description: '',
-    type: 'Sprint'
+    dueDate: '',
+    type: 'Sprint',
+    status: 'pending' as 'pending' | 'in-progress' | 'completed' | 'delayed',
+    completed: false,
+    assignedTo: ''
   });
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const savedProjectConfig = localStorage.getItem('project_config');
@@ -43,17 +66,180 @@ export function MilestonesPage() {
     }
   }, []);
 
-  const loadMilestones = (projectid: string) => {
-    const saved = localStorage.getItem(`${projectid}_milestones`);
-    if (saved) {
-      setMilestones(JSON.parse(saved));
+  const loadMilestones = async (projectid: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    // If guest mode, load from storage only
+    if (isGuestMode()) {
+      const saved = getStorageItem(`${projectid}_milestones`);
+      if (saved) {
+        setMilestones(JSON.parse(saved));
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // For logged-in users, try to fetch from API first
+    try {
+      const response = await fetch(`${API_BASE_URL}/projectmilestones?projectid=${projectid}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        // API returns array of milestones
+        if (Array.isArray(data)) {
+          setMilestones(data);
+          // Cache in localStorage
+          setStorageItem(`${projectid}_milestones`, JSON.stringify(data));
+        }
+      } else {
+        // If API fails, fall back to localStorage
+        console.warn('Failed to fetch from API, using localStorage');
+        const saved = getStorageItem(`${projectid}_milestones`);
+        if (saved) {
+          setMilestones(JSON.parse(saved));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching milestones:', err);
+      // Fall back to localStorage on error
+      const saved = getStorageItem(`${projectid}_milestones`);
+      if (saved) {
+        setMilestones(JSON.parse(saved));
+      }
+      setError('Failed to load milestones from server. Showing cached data.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const saveMilestones = (milestonesData: Milestone[]) => {
-    if (projectId) {
-      localStorage.setItem(`${projectId}_milestones`, JSON.stringify(milestonesData));
-      setMilestones(milestonesData);
+  const saveMilestones = async (milestonesData: Milestone[]) => {
+    if (!projectId) return;
+
+    // Save to localStorage immediately
+    setStorageItem(`${projectId}_milestones`, JSON.stringify(milestonesData));
+    setMilestones(milestonesData);
+
+    // If not guest mode, sync to API
+    if (!isGuestMode()) {
+      // Note: We might need to sync individual milestones to the API
+      // This depends on the API structure - bulk update or individual operations
+      console.log('Milestones updated locally. API sync may be needed.');
+    }
+  };
+
+  const handleAddMilestone = async (milestone: Omit<Milestone, 'id'>) => {
+    if (isGuestMode()) {
+      // Guest mode: add locally only
+      const newMilestone: Milestone = {
+        id: Date.now().toString(),
+        ...milestone
+      };
+      saveMilestones([...milestones, newMilestone]);
+      return;
+    }
+
+    // Logged-in users: POST to API
+    try {
+      const response = await fetch(`${API_BASE_URL}/projectmilestones`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          projectid: projectId,
+          date: milestone.dueDate,
+          description: milestone.description,
+          type: milestone.type,
+          status: milestone.status,
+          completed: milestone.completed,
+          assignedTo: milestone.assignedTo
+        })
+      });
+
+      if (response.ok) {
+        const newMilestone = await response.json();
+        saveMilestones([...milestones, newMilestone]);
+      } else {
+        throw new Error('Failed to add milestone');
+      }
+    } catch (err) {
+      console.error('Error adding milestone:', err);
+      setError('Failed to add milestone. Please try again.');
+      // Still add locally as fallback
+      const newMilestone: Milestone = {
+        id: Date.now().toString(),
+        ...milestone
+      };
+      saveMilestones([...milestones, newMilestone]);
+    }
+  };
+
+  const handleUpdateMilestone = async (id: string, updates: Partial<Milestone>) => {
+    if (isGuestMode()) {
+      // Guest mode: update locally only
+      const updatedMilestones = milestones.map(m =>
+        m.id === id ? { ...m, ...updates } : m
+      );
+      saveMilestones(updatedMilestones);
+      return;
+    }
+
+    // Logged-in users: PUT to API
+    try {
+      const response = await fetch(`${API_BASE_URL}/projectmilestones/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          projectid: projectId,
+          ...updates
+        })
+      });
+
+      if (response.ok) {
+        const updatedMilestones = milestones.map(m =>
+          m.id === id ? { ...m, ...updates } : m
+        );
+        saveMilestones(updatedMilestones);
+      } else {
+        throw new Error('Failed to update milestone');
+      }
+    } catch (err) {
+      console.error('Error updating milestone:', err);
+      setError('Failed to update milestone. Please try again.');
+      // Still update locally as fallback
+      const updatedMilestones = milestones.map(m =>
+        m.id === id ? { ...m, ...updates } : m
+      );
+      saveMilestones(updatedMilestones);
+    }
+  };
+
+  const handleDeleteMilestone = async (id: string) => {
+    if (isGuestMode()) {
+      // Guest mode: delete locally only
+      saveMilestones(milestones.filter(m => m.id !== id));
+      return;
+    }
+
+    // Logged-in users: DELETE from API
+    try {
+      const response = await fetch(`${API_BASE_URL}/projectmilestones/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        saveMilestones(milestones.filter(m => m.id !== id));
+      } else {
+        throw new Error('Failed to delete milestone');
+      }
+    } catch (err) {
+      console.error('Error deleting milestone:', err);
+      setError('Failed to delete milestone. Please try again.');
+      // Still delete locally as fallback
+      saveMilestones(milestones.filter(m => m.id !== id));
     }
   };
 
@@ -62,20 +248,11 @@ export function MilestonesPage() {
     
     if (editingMilestone) {
       // Update existing milestone
-      const updatedMilestones = milestones.map(m => 
-        m.id === editingMilestone.id 
-          ? { ...m, ...formData }
-          : m
-      );
-      saveMilestones(updatedMilestones);
+      handleUpdateMilestone(editingMilestone.id, formData);
       setEditingMilestone(null);
     } else {
       // Add new milestone
-      const newMilestone: Milestone = {
-        id: Date.now().toString(),
-        ...formData
-      };
-      saveMilestones([...milestones, newMilestone]);
+      handleAddMilestone(formData);
     }
 
     resetForm();
@@ -84,25 +261,32 @@ export function MilestonesPage() {
   const handleEdit = (milestone: Milestone) => {
     setEditingMilestone(milestone);
     setFormData({
-      date: milestone.date,
+      title: milestone.title,
       description: milestone.description,
-      type: milestone.type
+      dueDate: milestone.dueDate,
+      type: milestone.type,
+      status: milestone.status,
+      completed: milestone.completed,
+      assignedTo: milestone.assignedTo
     });
     setShowAddModal(true);
   };
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this milestone?')) {
-      const updatedMilestones = milestones.filter(m => m.id !== id);
-      saveMilestones(updatedMilestones);
+      handleDeleteMilestone(id);
     }
   };
 
   const resetForm = () => {
     setFormData({
-      date: '',
+      title: '',
       description: '',
-      type: 'Sprint'
+      dueDate: '',
+      type: 'Sprint',
+      status: 'pending' as 'pending' | 'in-progress' | 'completed' | 'delayed',
+      completed: false,
+      assignedTo: ''
     });
     setEditingMilestone(null);
     setShowAddModal(false);
@@ -174,14 +358,15 @@ export function MilestonesPage() {
   // Filter and sort milestones
   const filteredMilestones = milestones
     .filter(m => filterType === 'all' || m.type === filterType)
+    .filter(m => filterStatus === 'all' || m.status === filterStatus)
     .sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
+      const dateA = new Date(a.dueDate).getTime();
+      const dateB = new Date(b.dueDate).getTime();
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
   // Get upcoming milestones count
-  const upcomingCount = milestones.filter(m => getDaysUntil(m.date) >= 0).length;
+  const upcomingCount = milestones.filter(m => getDaysUntil(m.dueDate) >= 0).length;
 
   return (
     <div className="flex-1 bg-gray-50 p-12 overflow-auto">
@@ -237,7 +422,7 @@ export function MilestonesPage() {
                   <p className="text-sm text-gray-500">This Week</p>
                   <p className="text-2xl font-bold text-gray-800">
                     {milestones.filter(m => {
-                      const days = getDaysUntil(m.date);
+                      const days = getDaysUntil(m.dueDate);
                       return days >= 0 && days <= 7;
                     }).length}
                   </p>
@@ -251,7 +436,7 @@ export function MilestonesPage() {
                   <p className="text-sm text-gray-500">This Month</p>
                   <p className="text-2xl font-bold text-gray-800">
                     {milestones.filter(m => {
-                      const days = getDaysUntil(m.date);
+                      const days = getDaysUntil(m.dueDate);
                       return days >= 0 && days <= 30;
                     }).length}
                   </p>
@@ -273,6 +458,19 @@ export function MilestonesPage() {
                 <option value="all">All Types</option>
                 {MILESTONE_TYPES.map(type => (
                   <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium">Filter by Status:</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+              >
+                <option value="all">All Statuses</option>
+                {MILESTONE_STATUSES.map(status => (
+                  <option key={status.value} value={status.value}>{status.label}</option>
                 ))}
               </select>
             </div>
@@ -306,7 +504,7 @@ export function MilestonesPage() {
           ) : (
             <div className="divide-y">
               {filteredMilestones.map((milestone) => {
-                const days = getDaysUntil(milestone.date);
+                const days = getDaysUntil(milestone.dueDate);
                 const isPast = days < 0;
                 
                 return (
@@ -317,8 +515,8 @@ export function MilestonesPage() {
                           <span className="text-2xl">{getTypeIcon(milestone.type)}</span>
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
-                              <h3 className="text-lg font-bold">{formatDate(milestone.date)}</h3>
-                              {getStatusBadge(milestone.date)}
+                              <h3 className="text-lg font-bold">{formatDate(milestone.dueDate)}</h3>
+                              {getStatusBadge(milestone.dueDate)}
                               <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(milestone.type)}`}>
                                 {milestone.type}
                               </span>
@@ -378,12 +576,25 @@ export function MilestonesPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
+                    Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
                     Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                     className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4CBB17]"
                     required
                   />

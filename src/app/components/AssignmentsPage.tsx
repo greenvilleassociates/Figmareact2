@@ -1,7 +1,9 @@
-import assignmentImage from 'figma:asset/a97dafd66e22673ff82f15350f690eb0f257f1d6.png';
-import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
-import { Edit2, Save, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Save, X, Upload, FileText, Calendar, Edit2, Image as ImageIcon } from 'lucide-react';
+import { Link } from 'react-router';
+import assignmentImage from 'figma:asset/76faf8f617b56e6f079c5a7ead8f927f5a5fee32.png';
+import { getStorageItem } from '../utils/storageHelper';
+import { saveAssignment } from '../utils/taskSync';
 
 interface AssignmentImage {
   id: number;
@@ -43,10 +45,10 @@ export function AssignmentsPage() {
   }, []);
 
   const loadAssignmentData = (projectid: string) => {
-    const assignments: AssignmentData[] = [];
+    const assignments: AssignmentData[] = []
     // Load first 10 assignments
     for (let i = 1; i <= 10; i++) {
-      const saved = localStorage.getItem(`assignment_${projectid}_${i}`);
+      const saved = getStorageItem(`assignment_${projectid}_${i}`);
       if (saved) {
         assignments.push(JSON.parse(saved));
       } else {
@@ -168,7 +170,7 @@ export function AssignmentsPage() {
   ];
 
   // Update assignment data
-  const handleUpdateAssignment = (id: number, field: keyof AssignmentData, value: string) => {
+  const handleUpdateAssignment = async (id: number, field: keyof AssignmentData, value: string) => {
     if (!projectId) return;
     
     const assignment = assignmentData.find(a => a.id === id);
@@ -176,7 +178,8 @@ export function AssignmentsPage() {
       const updated = { ...assignment, [field]: value };
       const updatedData = assignmentData.map(a => a.id === id ? updated : a);
       setAssignmentData(updatedData);
-      localStorage.setItem(`assignment_${projectId}_${id}`, JSON.stringify(updated));
+      // Sync to both localStorage and API
+      await saveAssignment(projectId, id, updated);
     }
   };
 
@@ -189,7 +192,7 @@ export function AssignmentsPage() {
   };
 
   // Save inline edits
-  const handleSaveInlineEdit = (e: React.MouseEvent) => {
+  const handleSaveInlineEdit = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -198,7 +201,8 @@ export function AssignmentsPage() {
         a.id === editForm.id ? editForm : a
       );
       setAssignmentData(updatedData);
-      localStorage.setItem(`assignment_${projectId}_${editForm.id}`, JSON.stringify(editForm));
+      // Sync to both localStorage and API
+      await saveAssignment(projectId, editForm.id, editForm);
       setEditingAssignment(null);
       setEditForm(null);
     }
@@ -221,13 +225,14 @@ export function AssignmentsPage() {
   };
 
   // Save detailed changes
-  const handleSaveDetailedChanges = () => {
+  const handleSaveDetailedChanges = async () => {
     if (selectedAssignment && projectId) {
       const updatedData = assignmentData.map(a => 
         a.id === selectedAssignment.id ? selectedAssignment : a
       );
       setAssignmentData(updatedData);
-      localStorage.setItem(`assignment_${projectId}_${selectedAssignment.id}`, JSON.stringify(selectedAssignment));
+      // Sync to both localStorage and API
+      await saveAssignment(projectId, selectedAssignment.id, selectedAssignment);
       setShowDetailModal(false);
       setSelectedAssignment(null);
     }
