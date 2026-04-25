@@ -81,41 +81,41 @@ export function MyProjectsPage() {
   };
 
   // Fetch projects from API
-  const fetchUserProjects = async (userid: string) => {
+  const fetchUserProjects = async (mongoid: string) => {
     setIsLoading(true);
     setError(null);
+
     try {
-      const response = await fetch(`https://api242.onrender.com/api/projects?userid=${userid}`);
-      console.log("Projects Response", response);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const apiUrl = `https://api242.onrender.com/api/projects/mongo/${mongoid}`;
+      console.log('Fetching projects from:', apiUrl);
+      console.log('User mongoid:', mongoid);
+
+      const response = await fetch(apiUrl, {
+        signal: controller.signal,
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+
+      clearTimeout(timeoutId);
+      console.log("Projects Response Status:", response.status);
+      console.log("Projects Response OK:", response.ok);
       
       if (!response.ok) {
         throw new Error('Failed to fetch projects');
       }
+      
       const userProjects = await response.json();
       console.log("Projects Data", userProjects);
-      
-      // Get current user's uid for filtering - use from currentUser state for consistency
-      const currentUserUid = currentUser?.uid?.toString() || localStorage.getItem('uid');
-      console.log("Current User UID:", currentUserUid);
-      console.log("Current User from state:", currentUser);
-      
-      // Map to our Project interface and filter by uid
+
+      // API endpoint already filters by mongoid, so we just map the results
       const mappedProjects = userProjects
-        .filter((p: any) => {
-          // Filter to only show projects that match the current user's uid
-          const projectUid = p.userid?.toString() || p.uid?.toString();
-          const matches = projectUid === currentUserUid;
-          if (!matches) {
-            console.log(`Filtering out project ${p.projectid || p.id} - uid mismatch (project: ${projectUid}, user: ${currentUserUid})`);
-          } else {
-            console.log(`Including project ${p.projectid || p.id} - uid matches (project: ${projectUid}, user: ${currentUserUid})`);
-          }
-          return matches;
-        })
-        .map((p: any) => {
-        console.log('Mapping project:', { _id: p._id, projectid: p.projectid, projectname: p.projectname });
-        return {
-          id: p._id, // ALWAYS use MongoDB's _id (24-char hex string) from API
+        .map((p: any) => ({
+          id: p._id,
           name: p.projectname || p.name || `Project ${p.projectid}`,
           userid: p.userid,
           username: p.username,
@@ -130,32 +130,75 @@ export function MyProjectsPage() {
           subaccount: p.subaccount,
           companyid: p.companyid,
           logoUrl: p.logoUrl
-        };
-      });
+        }));
       
       setProjects(mappedProjects);
-      setRetrievedProjects(userProjects); // Store raw API response
+      setRetrievedProjects(userProjects);
       
-      // Auto-select first project if none selected
       if (mappedProjects.length > 0 && !selectedProject) {
         setSelectedProject(mappedProjects[0]);
       }
       
-      // Also store in localStorage for other pages
       localStorage.setItem('userProjects', JSON.stringify(mappedProjects));
-    } catch (error) {
-      console.error('Error fetching user projects:', error);
-      setError('Failed to load projects. Please try again.');
+      console.log(`✓ Loaded ${mappedProjects.length} projects from API`);
       
-      // Fallback to localStorage if API fails
+    } catch (error) {
+      console.log('⚠️ API unavailable, trying fallbacks...');
+      
+      // Try localStorage cache
       const savedProjects = localStorage.getItem('userProjects');
       if (savedProjects) {
-        const parsed = JSON.parse(savedProjects);
-        setProjects(parsed);
-        if (parsed.length > 0 && !selectedProject) {
-          setSelectedProject(parsed[0]);
+        try {
+          const parsed = JSON.parse(savedProjects);
+          setProjects(parsed);
+          if (parsed.length > 0 && !selectedProject) {
+            setSelectedProject(parsed[0]);
+          }
+          console.log('✓ Loaded from cache');
+          setIsLoading(false);
+          return;
+        } catch (e) {
+          console.log('Cache invalid');
         }
       }
+      
+      // Try backup files
+      try {
+        const indexResponse = await fetch('/data/projects/index.json');
+        if (indexResponse.ok) {
+          const projectIndex = await indexResponse.json();
+          const userProjects = projectIndex.projects.filter((p: any) => {
+            // Try to match by mongoid first, then fall back to userid
+            return (p.mongoid && p.mongoid === mongoid) ||
+                   (p.userid && p.userid.toString() === mongoid);
+          });
+          
+          if (userProjects.length > 0) {
+            const mappedProjects = userProjects.map((p: any) => ({
+              id: p.projectid,
+              name: p.projectname,
+              userid: p.userid,
+              username: p.username,
+              projectid: p.projectid,
+              projectname: p.projectname
+            }));
+            setProjects(mappedProjects);
+            if (mappedProjects.length > 0 && !selectedProject) {
+              setSelectedProject(mappedProjects[0]);
+            }
+            localStorage.setItem('userProjects', JSON.stringify(mappedProjects));
+            console.log('✓ Loaded from backup');
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (backupError) {
+        console.log('Backup unavailable');
+      }
+      
+      // No projects found anywhere - this is OK, user just has no projects
+      console.log('ℹ️ No projects found');
+      setProjects([]);
     } finally {
       setIsLoading(false);
     }
@@ -163,26 +206,42 @@ export function MyProjectsPage() {
 
   // Load user and projects on mount
   useEffect(() => {
+    // Log environment info for debugging
+    console.log('=== MyProjectsPage Environment ===');
+    console.log('Current origin:', window.location.origin);
+    console.log('Current URL:', window.location.href);
+
     const savedUser = localStorage.getItem('currentUser');
     const savedLoginStatus = localStorage.getItem('isLoggedIn');
-    
+
     if (savedUser && savedLoginStatus && JSON.parse(savedLoginStatus)) {
       const user = JSON.parse(savedUser);
+      console.log('Current user:', user);
       setCurrentUser(user);
-      
-      if (user.uid) {
-        fetchUserProjects(user.uid.toString());
+
+      if (user.mongoid) {
+        fetchUserProjects(user.mongoid);
+      } else if (user._id) {
+        // Fallback to _id if mongoid not present
+        fetchUserProjects(user._id);
+      } else {
+        // User logged in but no mongoid - just show empty state
+        setIsLoading(false);
       }
     } else {
+      // Not logged in - just show empty state
       setIsLoading(false);
-      setError('Please log in to view your projects');
     }
 
     // Load active project ID
     const activeProject = localStorage.getItem('currentProject');
     if (activeProject) {
-      const parsed = JSON.parse(activeProject);
-      setActiveProjectId(parsed.projectid || parsed.id);
+      try {
+        const parsed = JSON.parse(activeProject);
+        setActiveProjectId(parsed.projectid || parsed.id);
+      } catch (e) {
+        console.log('Invalid active project data');
+      }
     }
   }, []);
 
@@ -208,8 +267,11 @@ export function MyProjectsPage() {
 
   // Handle refresh
   const handleRefresh = () => {
-    if (currentUser?.uid) {
-      fetchUserProjects(currentUser.uid.toString());
+    if (currentUser?.mongoid) {
+      fetchUserProjects(currentUser.mongoid);
+    } else if (currentUser?._id) {
+      // Fallback to _id if mongoid not present
+      fetchUserProjects(currentUser._id);
     }
   };
 
@@ -231,6 +293,7 @@ export function MyProjectsPage() {
       // Prepare data for API - create project shell with generated IDs
       // MongoDB will auto-generate the _id field, so we don't include it
       const apiData = {
+        mongoid: currentUser.mongoid || currentUser._id,
         userid: currentUser.uid.toString(),
         instanceid: newProjectData.instanceid || generatedProjectId,
         projectname: newProjectData.projectname,
@@ -246,27 +309,41 @@ export function MyProjectsPage() {
         logoUrl: ''
       };
 
-      console.log('Creating project:', apiData);
+      const userMongoid = currentUser.mongoid || currentUser._id;
+      const apiUrl = `https://api242.onrender.com/api/projects/mongo/${userMongoid}`;
 
-      // POST to API
-      const response = await fetch('https://api242.onrender.com/api/projects', {
+      console.log('Creating project for user mongoid:', userMongoid);
+      console.log('POST URL:', apiUrl);
+      console.log('POST Data:', apiData);
+
+      // POST to API using mongoid endpoint
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(apiData),
+        signal: controller.signal,
+        mode: 'cors',
       });
 
-      console.log("Create Project Response", response);
+      clearTimeout(timeoutId);
+
+      console.log("Create Project Response Status:", response.status);
+      console.log("Create Project Response OK:", response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
-        throw new Error(`Failed to create project: ${response.status} - ${errorText}`);
+        console.error('API Error Response:', response.status, response.statusText);
+        console.error('API Error Body:', errorText);
+        throw new Error(`Failed to create project: ${response.status} - ${errorText || response.statusText}`);
       }
 
       const createdProject = await response.json();
-      console.log('Project created:', createdProject);
+      console.log('✅ Project created successfully:', createdProject);
 
       // Initialize default assignment data
       initializeDefaultAssignments(generatedProjectId);
@@ -342,16 +419,30 @@ export function MyProjectsPage() {
       window.dispatchEvent(new Event('loginStatusChanged'));
 
       // Refresh projects list
-      fetchUserProjects(currentUser.uid.toString());
+      fetchUserProjects(currentUser.mongoid || currentUser._id);
 
       // Show success message
       setShowSuccessMessage(true);
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 3000);
-    } catch (error) {
-      console.error('Error creating project:', error);
-      alert('Failed to create project. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Error creating project:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+
+      let errorMessage = 'Failed to create project.\n\n';
+      if (error.name === 'AbortError') {
+        errorMessage += '⏱️ Request timed out (30s).\n\nThe API server (api242.onrender.com) may be sleeping on Render free tier. It can take 30-60 seconds to wake up.\n\nPlease try again in a moment.';
+      } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        errorMessage += `🌐 Network/CORS Error\n\nCurrent origin: ${window.location.origin}\n\nPossible causes:\n• API server is sleeping (Render free tier cold start)\n• CORS policy blocking this origin\n• Network connectivity issue\n\nAllowed origins include:\n• https://figma.com\n• https://www.figma.com\n• https://figma.site\n\nTry again in 60 seconds (server wake time).`;
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Unknown error. Check browser console for details.';
+      }
+
+      alert(errorMessage);
     } finally {
       setIsCreating(false);
     }
@@ -385,6 +476,7 @@ export function MyProjectsPage() {
       // NOTE: selectedProject.id is the PROJECT's MongoDB _id, NOT the user's uid
       const apiData = {
         _id: selectedProject.id, // PROJECT's MongoDB _id (required in body for Express)
+        mongoid: currentUser.mongoid || currentUser._id, // USER's MongoDB _id
         projectid: selectedProject.projectid,
         projectname: editProjectData.projectname,
         instanceid: editProjectData.instanceid || '',
@@ -405,14 +497,22 @@ export function MyProjectsPage() {
       console.log('Request body:', apiData);
       console.log('PUT Payload:', JSON.stringify(apiData, null, 2));
 
-      // PUT to API - using PROJECT's _id in both URL path and body
-      const response = await fetch(`https://api242.onrender.com/api/projects/${selectedProject.id}`, {
+      // PUT to API - using mongoid and project _id in URL path
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      const userMongoid = currentUser.mongoid || currentUser._id;
+      const response = await fetch(`https://api242.onrender.com/api/projects/mongo/${userMongoid}/${selectedProject.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(apiData),
+        signal: controller.signal,
+        mode: 'cors',
       });
+
+      clearTimeout(timeoutId);
 
       console.log("Update Project Response", response);
 
@@ -465,13 +565,27 @@ export function MyProjectsPage() {
       window.dispatchEvent(new Event('loginStatusChanged'));
 
       // Refresh projects list
-      fetchUserProjects(currentUser.uid.toString());
+      fetchUserProjects(currentUser.mongoid || currentUser._id);
 
       // Show success message
       alert('Project updated successfully!');
-    } catch (error) {
-      console.error('Error updating project:', error);
-      alert('Failed to update project. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Error updating project:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+
+      let errorMessage = 'Failed to update project.\n\n';
+      if (error.name === 'AbortError') {
+        errorMessage += '⏱️ Request timed out (30s).\n\nThe API server may be sleeping. Try again in a moment.';
+      } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        errorMessage += `🌐 Network/CORS Error\n\nCurrent origin: ${window.location.origin}\n\nThe API server may be sleeping (Render free tier). Try again in 60 seconds.`;
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Unknown error. Check browser console for details.';
+      }
+
+      alert(errorMessage);
     } finally {
       setIsUpdating(false);
     }
@@ -484,26 +598,6 @@ export function MyProjectsPage() {
         <div className="text-center">
           <RefreshCw className="w-12 h-12 animate-spin text-[#4CBB17] mx-auto mb-4" />
           <p className="text-gray-600">Loading your projects...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Render error state
-  if (error && projects.length === 0) {
-    return (
-      <div className="flex-1 bg-gray-50 p-12 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Unable to Load Projects</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={handleRefresh}
-            className="px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors flex items-center gap-2 mx-auto"
-          >
-            <RefreshCw className="w-5 h-5" />
-            Try Again
-          </button>
         </div>
       </div>
     );
@@ -530,26 +624,30 @@ export function MyProjectsPage() {
           <div>
             <h1 className="text-3xl font-bold mb-1">My Projects</h1>
             <p className="text-gray-500">
-              {currentUser?.username && `Showing projects for ${currentUser.username}`}
+              {currentUser?.username ? `Showing projects for ${currentUser.username}` : 'Manage your projects'}
               {projects.length > 0 && ` • ${projects.length} ${projects.length === 1 ? 'project' : 'projects'} found`}
             </p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Create New Project
-            </button>
-            <button
-              onClick={handleRefresh}
-              className="px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors flex items-center gap-2"
-              disabled={isLoading}
-            >
-              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            {currentUser && (
+              <>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create New Project
+                </button>
+                <button
+                  onClick={handleRefresh}
+                  className="px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors flex items-center gap-2"
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -559,11 +657,31 @@ export function MyProjectsPage() {
         {projects.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-12">
             <div className="text-center max-w-md">
-              <FolderKanban className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">No Projects Yet</h2>
-              <p className="text-gray-600 mb-6">
-                You don't have any projects yet. Create one in the Settings page to get started.
-              </p>
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FolderKanban className="w-12 h-12 text-gray-400" />
+              </div>
+              {currentUser ? (
+                <>
+                  <h2 className="text-3xl font-bold mb-3">No Projects Yet</h2>
+                  <p className="text-gray-600 mb-8 text-lg">
+                    Get started by creating your first project. All your project data and configurations will be stored here.
+                  </p>
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="px-8 py-4 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors flex items-center gap-3 mx-auto text-lg font-semibold shadow-lg hover:shadow-xl"
+                  >
+                    <Plus className="w-6 h-6" />
+                    Create Your First Project
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-3xl font-bold mb-3">Please Log In</h2>
+                  <p className="text-gray-600 text-lg">
+                    You need to be logged in to view and manage your projects.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         ) : (

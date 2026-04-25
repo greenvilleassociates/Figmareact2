@@ -66,18 +66,33 @@ export function PortfolioPage() {
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const projectData = localStorage.getItem('currentProject');
-    if (projectData) {
-      const project = JSON.parse(projectData);
-      const projectid = project.projectid || project.id;
-      const savedData = localStorage.getItem(`${projectid}_portfolio`);
-      
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        setData(parsed);
-        setEditData(parsed);
+    const loadData = async () => {
+      const projectData = localStorage.getItem('currentProject');
+      if (projectData) {
+        const project = JSON.parse(projectData);
+        const projectid = project.projectid || project.id;
+        const savedData = localStorage.getItem(`${projectid}_portfolio`);
+
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          setData(parsed);
+          setEditData(parsed);
+        } else {
+          // Load default data from JSON file
+          try {
+            const response = await fetch('/data/portfolio.json');
+            if (response.ok) {
+              const jsonData = await response.json();
+              setData(jsonData);
+              setEditData(jsonData);
+            }
+          } catch (error) {
+            console.log('No default portfolio.json found, using hardcoded defaults');
+          }
+        }
       }
-    }
+    };
+    loadData();
   }, []);
 
   // Save data to localStorage

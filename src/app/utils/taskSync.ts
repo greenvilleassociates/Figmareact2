@@ -1,6 +1,41 @@
 /**
- * Task Sync Utility
- * Handles dual-storage for project tasks: localStorage (primary) and API (sync)
+ * TaskSync Utility
+ * 
+ * Synchronizes tasks (assignments and project phases) between localStorage and the API.
+ * 
+ * PROJECT ASSIGNMENT MODEL:
+ * ========================
+ * Projects can be assigned to three different entity types:
+ * 
+ * 1. USERID (Individual User Assignment)
+ *    - Single user owns/manages the project
+ *    - Field: userid (integer)
+ *    - Example: { userid: 1, username: "john" }
+ * 
+ * 2. GROUPID (Group/Team Assignment)
+ *    - Multiple users collaborate on the project via group membership
+ *    - Field: groupid (ObjectId)
+ *    - Related API: /usergroups
+ *    - UserGroup Schema: { userId, groupId, role, status }
+ *    - Example: { groupid: "507f1f77bcf86cd799439011" }
+ * 
+ * 3. COMPANYID (Company/Organization Assignment)
+ *    - All users within a company have access
+ *    - Field: companyid (string/integer)
+ *    - Example: { companyid: "12345678" }
+ * 
+ * STORAGE STRATEGY:
+ * ================
+ * - Project metadata (currentProject, project_config) → localStorage (all users)
+ * - Assignment/phase data → sessionStorage (guests) | localStorage (logged-in users)
+ * - API sync → Only for logged-in users with valid authentication
+ * 
+ * API ENDPOINTS:
+ * =============
+ * - POST /projecttasks - Create task
+ * - PUT /projecttasks/:id - Update task
+ * - DELETE /projecttasks/:id - Delete task
+ * - GET /projecttasks?projectid={id} - List tasks for project
  */
 
 const API_BASE_URL = 'https://api242.onrender.com';

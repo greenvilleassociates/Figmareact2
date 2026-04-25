@@ -13,6 +13,10 @@ import { PortfolioPage } from '@/app/components/PortfolioPage';
 import { USCLifePage } from '@/app/components/USCLifePage';
 import { VitaePage } from '@/app/components/VitaePage';
 import { GreenvillePage } from '@/app/components/GreenvillePage';
+import { PublicationsPage } from '@/app/components/PublicationsPage';
+import { AwardsPage } from '@/app/components/AwardsPage';
+import { CertificationsPage } from '@/app/components/CertificationsPage';
+import { PictureWallPage } from '@/app/components/PictureWallPage';
 import { Assignment1 } from '@/app/components/assignments/Assignment1';
 import { Assignment2 } from '@/app/components/assignments/Assignment2';
 import { Assignment3 } from '@/app/components/assignments/Assignment3';
@@ -93,6 +97,22 @@ export const router = createBrowserRouter([
       {
         path: 'personal-pages/greenville',
         Component: GreenvillePage,
+      },
+      {
+        path: 'personal-pages/publications',
+        Component: PublicationsPage,
+      },
+      {
+        path: 'personal-pages/awards',
+        Component: AwardsPage,
+      },
+      {
+        path: 'personal-pages/certifications',
+        Component: CertificationsPage,
+      },
+      {
+        path: 'personal-pages/picturewall',
+        Component: PictureWallPage,
       },
       {
         path: 'assignments',

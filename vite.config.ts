@@ -3,53 +3,31 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
+
+function figmaAssetResolver() {
+  return {
+    name: 'figma-asset-resolver',
+    resolveId(id) {
+      if (id.startsWith('figma:asset/')) {
+        const filename = id.replace('figma:asset/', '')
+        return path.resolve(__dirname, 'src/assets', filename)
+      }
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
+    figmaAssetResolver(),
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
   ],
-
-  // Allow access from LAN + disable strict host checking
-  server: {
-    host: true,              // allows access from network (0.0.0.0)
-    port: 443,               // or any port you want
-    strictPort: false,
-    cors: {
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization']
-    },
-
-    // Proxy to avoid CORS entirely during development
-    proxy: {
-      '/api': {
-        target: 'http://localhost:4173', // your backend
-        changeOrigin: true,
-        secure: false,
-        rewrite: (p) => p.replace(/^\/api/, '')
-      }
-    }
-  },
-
   resolve: {
     alias: {
+      // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
-      'assets': path.resolve(__dirname, './src/assets'),
-      'figma:asset': path.resolve(__dirname, './src/assets'),
     },
   },
-
-  optimizeDeps: {
-    exclude: ['figma:asset'],
-  },
-
-  build: {
-    rollupOptions: {
-      plugins: [
-        // Add any Rollup plugins you need here
-      ]
-    }
-  }
 })

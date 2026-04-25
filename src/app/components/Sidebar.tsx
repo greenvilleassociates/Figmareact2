@@ -148,7 +148,14 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   // Fetch projects from API for the logged-in user
   const fetchUserProjects = async (userid: string) => {
     try {
-      const response = await fetch(`https://api242.onrender.com/api/projects?userid=${userid}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(`https://api242.onrender.com/api/projects?userid=${userid}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       console.log("Projects Response", response);
       
       if (!response.ok) {
@@ -179,11 +186,44 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       setUserProjects(mappedProjects);
       localStorage.setItem('userProjects', JSON.stringify(mappedProjects));
     } catch (error) {
-      console.error('Error fetching user projects:', error);
-      const savedProjects = localStorage.getItem('projects');
+      console.log('⚠️ User projects not loaded from API (API unavailable)');
+      
+      // Try to load from localStorage cache first
+      const savedProjects = localStorage.getItem('userProjects');
       if (savedProjects) {
+        console.log('✓ Loaded projects from localStorage cache');
         setUserProjects(JSON.parse(savedProjects));
+        return;
       }
+      
+      // Try to load from backup files in /public/data/projects
+      try {
+        const indexResponse = await fetch('/data/projects/index.json');
+        if (indexResponse.ok) {
+          const projectIndex = await indexResponse.json();
+          const userProjects = projectIndex.projects.filter((p: any) => p.userid.toString() === userid);
+          
+          if (userProjects.length > 0) {
+            console.log('✓ Loaded projects from backup files');
+            const mappedProjects = userProjects.map((p: any) => ({
+              id: p.projectid,
+              name: p.projectname,
+              userid: p.userid,
+              username: p.username,
+              projectid: p.projectid,
+              projectname: p.projectname
+            }));
+            setUserProjects(mappedProjects);
+            localStorage.setItem('userProjects', JSON.stringify(mappedProjects));
+            return;
+          }
+        }
+      } catch (backupError) {
+        console.log('⚠️ Backup projects not available');
+      }
+      
+      // No projects available from any source
+      console.log('ℹ️ No projects available for user');
     }
   };
   

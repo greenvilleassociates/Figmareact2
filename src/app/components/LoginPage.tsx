@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { LogIn, AlertCircle, Loader, Eye, EyeOff, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
 import { loadGuestConfiguration } from '../utils/guestConfig';
+import { sendLoginLog } from '../utils/loginLog';
 
 interface User {
   _id?: string; // MongoDB auto-generated ID
@@ -49,25 +50,43 @@ export function LoginPage() {
     setError('');
 
     try {
-      // Check for guest login first
-      if (username.toLowerCase() === 'guest' && password === 'guest') {
-        // Guest login - bypass API authentication
+      // HARDCODED USERS CHECK FIRST
+      if ((username === 'john' && password === 'john') || (username === 'portia' && password === 'portia')) {
+        console.log('✅ User authenticated via hardcoded credentials:', username);
+        
+        const hardcodedUser = {
+          _id: username === 'john' ? 'local_user_001' : 'local_user_002',
+          userid: username === 'john' ? 1 : 2,
+          useridstring: username === 'john' ? 'USR001' : 'USR002',
+          username: username,
+          email: username === 'john' ? 'john@example.com' : 'portia@example.com',
+          role: 'superuser',
+          firstname: username === 'john' ? 'John' : 'Portia',
+          lastname: username === 'john' ? 'Doe' : 'Smith',
+          fullname: username === 'john' ? 'John Doe' : 'Portia Smith',
+          displayname: username === 'john' ? 'John Doe' : 'Portia Smith'
+        };
+        
+        // Successful login
         localStorage.setItem('isLoggedIn', JSON.stringify(true));
-        localStorage.setItem('isGuestMode', JSON.stringify(true));
+        localStorage.removeItem('isGuestMode');
         localStorage.setItem('currentUser', JSON.stringify({
-          uid: 0,
-          username: 'Guest',
-          email: 'guest@example.com',
-          role: 'guest'
+          _id: hardcodedUser._id,
+          mongoid: hardcodedUser._id,
+          uid: hardcodedUser.userid,
+          username: hardcodedUser.username,
+          email: hardcodedUser.email,
+          role: hardcodedUser.role
         }));
         
-        // Check if guest configuration already exists
-        await loadGuestConfiguration();
+        // Send usage log
+        await sendLoginLog(hardcodedUser.userid, `User ${hardcodedUser.username} logged in (hardcoded)`);
         
         // Dispatch event for sidebar to update
         window.dispatchEvent(new Event('loginStatusChanged'));
         
         setIsLoggedIn(true);
+        
         // Redirect to home page after successful login
         setTimeout(() => {
           navigate('/');
@@ -76,47 +95,178 @@ export function LoginPage() {
         return;
       }
 
-      // Fetch users from the API
-      const response = await fetch('https://api242.onrender.com/users');
+      // STEP 1: Check local users.json first
+      console.log('Step 1: Checking local users database...');
       
-      console.log("Response", response);
+      let localAuthSuccess = false;
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch users from the API');
+      try {
+        const localResponse = await fetch('/data/users.json', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
+        
+        console.log('Local users.json response:', localResponse.status);
+        
+        if (localResponse.ok) {
+          const localUsers: User[] = await localResponse.json();
+          console.log('✓ Local users loaded:', localUsers.length, 'users');
+          console.log('Available usernames:', localUsers.map(u => u.username).join(', '));
+          console.log('Trying to match:', username);
+          
+          // Find matching user in local database
+          const localUser = localUsers.find(
+            (u) => u.username === username && u.plainpassword === password
+          );
+          
+          if (localUser) {
+            console.log('✅ User authenticated from local database:', localUser.username);
+            
+            // Check if this is guest mode
+            const isGuest = localUser.role === 'guest';
+            
+            // Successful login from local database
+            localStorage.setItem('isLoggedIn', JSON.stringify(true));
+            if (isGuest) {
+              localStorage.setItem('isGuestMode', JSON.stringify(true));
+            } else {
+              localStorage.removeItem('isGuestMode');
+            }
+            
+            localStorage.setItem('currentUser', JSON.stringify({
+              _id: localUser._id,
+              mongoid: localUser._id,
+              uid: localUser.userid,
+              username: localUser.username,
+              email: localUser.email,
+              role: localUser.role
+            }));
+            
+            // Send usage log
+            await sendLoginLog(localUser.userid, `User ${localUser.username} logged in (local JSON)`);
+            
+            // Load guest configuration if needed
+            if (isGuest) {
+              await loadGuestConfiguration();
+            }
+            
+            // Dispatch event for sidebar to update
+            window.dispatchEvent(new Event('loginStatusChanged'));
+            
+            setIsLoggedIn(true);
+            localAuthSuccess = true;
+            
+            // Redirect to home page after successful login
+            setTimeout(() => {
+              navigate('/');
+            }, 500);
+            setLoading(false);
+            return;
+          } else {
+            console.log('❌ User not found in local database');
+          }
+        } else {
+          console.warn('⚠️ Local users.json returned status:', localResponse.status);
+        }
+      } catch (localError: any) {
+        console.warn('⚠️ Local users.json fetch failed:', localError.message);
       }
 
-      const users: User[] = await response.json();
-
-      // Find matching user
-      const user = users.find(
-        (u) => u.username === username && u.plainpassword === password
-      );
-
-      if (user) {
-        // Successful login - save specific user fields
-        localStorage.setItem('isLoggedIn', JSON.stringify(true));
-        localStorage.setItem('currentUser', JSON.stringify({
-          _id: user._id, // MongoDB record ID (used by /api/ endpoints)
-          uid: user.userid, // User ID field
-          username: user.username,
-          email: user.email,
-          role: user.role
-        }));
-        
-        // Dispatch event for sidebar to update
-        window.dispatchEvent(new Event('loginStatusChanged'));
-        
-        setIsLoggedIn(true);
-        // Redirect to home page after successful login
-        setTimeout(() => {
-          navigate('/');
-        }, 500);
-      } else {
-        setError('Invalid username or password');
+      // If we got here, local auth didn't succeed
+      if (localAuthSuccess) {
+        return; // Should not reach here, but just in case
       }
-    } catch (err) {
+
+      console.log('Step 2: Trying API authentication...');
+
+      // STEP 2: Fall back to API if not found locally
+      console.log('Attempting to connect to API server...');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      try {
+        const response = await fetch('https://api242.onrender.com/', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+          mode: 'cors',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log("API Response status:", response.status);
+        
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+
+        const users: User[] = await response.json();
+        console.log("✓ API users fetched successfully:", users.length);
+
+        // Find matching user from API
+        const user = users.find(
+          (u) => u.username === username && u.plainpassword === password
+        );
+
+        if (user) {
+          console.log('✅ User authenticated from API');
+          
+          // Successful login from API
+          localStorage.setItem('isLoggedIn', JSON.stringify(true));
+          localStorage.removeItem('isGuestMode'); // API users are not guests
+          localStorage.setItem('currentUser', JSON.stringify({
+            _id: user._id,
+            mongoid: user._id,
+            uid: user.userid,
+            username: user.username,
+            email: user.email,
+            role: user.role
+          }));
+          
+          // Send usage log
+          await sendLoginLog(user.userid, `User ${user.username} logged in (API)`);
+          
+          // Dispatch event for sidebar to update
+          window.dispatchEvent(new Event('loginStatusChanged'));
+          
+          setIsLoggedIn(true);
+          // Redirect to home page after successful login
+          setTimeout(() => {
+            navigate('/');
+          }, 500);
+        } else {
+          setError('❌ Invalid username or password.\n\n💡 Try: john/john, portia/portia, or guest/guest');
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        
+        console.error('API Fetch Error:', fetchError);
+        
+        if (fetchError.name === 'AbortError') {
+          setError('⏱️ Connection timeout - API server is not responding.\n\nThe API server may be sleeping (Render free tier cold start).\n\n💡 Try local users: john/john, portia/portia, or guest/guest');
+          return;
+        }
+        
+        // Check if it's a network/CORS error
+        if (fetchError.message === 'Failed to fetch' || fetchError instanceof TypeError) {
+          setError('🌐 Cannot reach API server.\n\nPossible reasons:\n• Server is sleeping (Render free tier)\n• CORS is blocking the request\n• Network connection issues\n• Server is offline\n\n💡 Try local users:\n• john/john (superuser)\n• portia/portia (superuser)\n• guest/guest (demo mode)');
+          return;
+        }
+        
+        throw fetchError;
+      }
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError('Unable to connect to authentication server. Please try again later.');
+      
+      // Provide more specific error messages
+      let errorMessage = err.message || 'Unable to authenticate. Please check your credentials.';
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -188,7 +338,7 @@ export function LoginPage() {
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800">{error}</p>
+              <p className="text-sm text-red-800 whitespace-pre-line">{error}</p>
             </div>
           )}
 
@@ -255,6 +405,21 @@ export function LoginPage() {
             )}
           </button>
 
+          <div className="mt-3">
+            <button
+              onClick={() => {
+                setUsername('guest');
+                setPassword('guest');
+                setTimeout(() => handleLogin(), 100);
+              }}
+              disabled={loading}
+              className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <LogIn className="w-5 h-5" />
+              Continue as Guest (Demo Mode)
+            </button>
+          </div>
+
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
@@ -269,14 +434,14 @@ export function LoginPage() {
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800 text-center">
-              <strong>💡 Try Guest Mode:</strong> Login with username <code className="bg-blue-100 px-1.5 py-0.5 rounded">guest</code> and password <code className="bg-blue-100 px-1.5 py-0.5 rounded">guest</code> for a quick demo!
+              <strong>💡 Local Test Users:</strong> Try <code className="bg-blue-100 px-1.5 py-0.5 rounded">john/john</code> or <code className="bg-blue-100 px-1.5 py-0.5 rounded">portia/portia</code> (superuser) or <code className="bg-blue-100 px-1.5 py-0.5 rounded">guest/guest</code> for demo mode!
             </p>
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
-              Login credentials are validated against the API at<br />
-              <code className="text-xs bg-gray-100 px-2 py-1 rounded">https://api242.onrender.com/users</code>
+              Authentication: Local users first, then API fallback<br />
+              <code className="text-xs bg-gray-100 px-2 py-1 rounded">/data/users.json</code> → <code className="text-xs bg-gray-100 px-2 py-1 rounded">api242.onrender.com/</code>
             </p>
           </div>
         </div>

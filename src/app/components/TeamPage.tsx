@@ -68,7 +68,19 @@ export function TeamPage() {
 
     // For logged-in users, try to fetch from API first
     try {
-      const response = await fetch(`${API_BASE_URL}/usergroups?projectid=${projectid}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(`${API_BASE_URL}/usergroups?projectid=${projectid}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();
@@ -115,8 +127,12 @@ export function TeamPage() {
           setTeamData(JSON.parse(saved));
         }
       }
-    } catch (err) {
-      console.error('Error fetching team data:', err);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.error('API timeout - loading cached data');
+      } else {
+        console.error('Error fetching team data:', err);
+      }
       // Fall back to localStorage on error
       const saved = getStorageItem(`${projectid}_team`);
       if (saved) {

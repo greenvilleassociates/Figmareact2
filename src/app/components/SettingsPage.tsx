@@ -138,6 +138,18 @@ export function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [apiRoot, setApiRoot] = useState('https://api242.onrender.com');
+  const [enabledPersonalPages, setEnabledPersonalPages] = useState<Record<string, boolean>>({
+    about: true,
+    interests: true,
+    portfolio: true,
+    usclife: true,
+    vitae: true,
+    greenville: true,
+    publications: true,
+    awards: true,
+    certifications: true,
+    picturewall: true
+  });
 
   // Check if user is logged in, redirect if not
   useEffect(() => {
@@ -210,6 +222,7 @@ export function SettingsPage() {
     const savedAssignmentImages = localStorage.getItem('assignmentImages');
     const savedProjectImages = localStorage.getItem('projectImages');
     const savedProjectConfig = localStorage.getItem('project_config');
+    const savedEnabledPages = localStorage.getItem('enabledPersonalPages');
 
     if (savedLinks) setCustomLinks(JSON.parse(savedLinks));
     if (savedGithubConfig) setGithubConfig(JSON.parse(savedGithubConfig));
@@ -218,6 +231,33 @@ export function SettingsPage() {
     if (savedLoginStatus) setIsLoggedIn(JSON.parse(savedLoginStatus));
     if (savedAssignmentImages) setAssignmentImages(JSON.parse(savedAssignmentImages));
     if (savedProjectImages) setProjectImages(JSON.parse(savedProjectImages));
+
+    // Merge saved enabled pages with defaults to ensure new pages are visible
+    const pageDefaults = {
+      about: true,
+      interests: true,
+      portfolio: true,
+      usclife: true,
+      vitae: true,
+      greenville: true,
+      publications: true,
+      awards: true,
+      certifications: true,
+      picturewall: true
+    };
+
+    if (savedEnabledPages) {
+      const saved = JSON.parse(savedEnabledPages);
+      const merged = { ...pageDefaults, ...saved };
+      console.log('Settings: Loaded enabled pages from localStorage and merged with defaults', merged);
+      setEnabledPersonalPages(merged);
+      // Save the merged version back to localStorage to include new defaults
+      localStorage.setItem('enabledPersonalPages', JSON.stringify(merged));
+    } else {
+      console.log('Settings: No saved settings, using all defaults', pageDefaults);
+      setEnabledPersonalPages(pageDefaults);
+      localStorage.setItem('enabledPersonalPages', JSON.stringify(pageDefaults));
+    }
     if (savedProjectConfig) {
       const config = JSON.parse(savedProjectConfig);
       setProjectConfig(config);
@@ -283,6 +323,34 @@ export function SettingsPage() {
   // Delete link
   const handleDeleteLink = (id: string) => {
     saveCustomLinks(customLinks.filter(link => link.id !== id));
+  };
+
+  // Toggle personal page visibility
+  const handleTogglePersonalPage = (pageKey: string) => {
+    const updated = {
+      ...enabledPersonalPages,
+      [pageKey]: !enabledPersonalPages[pageKey]
+    };
+    setEnabledPersonalPages(updated);
+    localStorage.setItem('enabledPersonalPages', JSON.stringify(updated));
+  };
+
+  // Reset all pages to visible
+  const handleResetPersonalPages = () => {
+    const defaults = {
+      about: true,
+      interests: true,
+      portfolio: true,
+      usclife: true,
+      vitae: true,
+      greenville: true,
+      publications: true,
+      awards: true,
+      certifications: true,
+      picturewall: true
+    };
+    setEnabledPersonalPages(defaults);
+    localStorage.setItem('enabledPersonalPages', JSON.stringify(defaults));
   };
 
   // Save GitHub config
@@ -1253,6 +1321,62 @@ export function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Personal Pages Visibility */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-semibold flex items-center gap-2">
+                <Settings className="w-6 h-6 text-[#4CBB17]" />
+                Personal Pages Visibility
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Toggle which pages appear in MyLinks ({Object.values(enabledPersonalPages).filter(Boolean).length}/10 visible)
+              </p>
+            </div>
+            <button
+              onClick={handleResetPersonalPages}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Show All
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { key: 'about', label: 'About Me', icon: '👤' },
+              { key: 'interests', label: 'Interests', icon: '❤️' },
+              { key: 'portfolio', label: 'Portfolio', icon: '💼' },
+              { key: 'usclife', label: 'USC Life', icon: '🎓' },
+              { key: 'vitae', label: 'Vitae', icon: '📄' },
+              { key: 'greenville', label: 'Greenville', icon: '🏢' },
+              { key: 'publications', label: 'Publications', icon: '📚' },
+              { key: 'awards', label: 'Awards', icon: '🏆' },
+              { key: 'certifications', label: 'Certifications', icon: '🛡️' },
+              { key: 'picturewall', label: 'Picture Wall', icon: '🖼️' }
+            ].map((page) => (
+              <div
+                key={page.key}
+                className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{page.icon}</span>
+                  <span className="font-medium">{page.label}</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enabledPersonalPages[page.key] !== false}
+                    onChange={() => handleTogglePersonalPage(page.key)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#4CBB17]/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4CBB17]"></div>
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Assignment Images */}
