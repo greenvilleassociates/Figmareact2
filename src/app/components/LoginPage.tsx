@@ -107,10 +107,15 @@ export function LoginPage() {
             'Accept': 'application/json',
           }
         });
-        
+
         console.log('Local users.json response:', localResponse.status);
-        
+
         if (localResponse.ok) {
+          const contentType = localResponse.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            console.warn('⚠️ Local users.json returned HTML instead of JSON, skipping');
+            throw new Error('Not JSON');
+          }
           const localUsers: User[] = await localResponse.json();
           console.log('✓ Local users loaded:', localUsers.length, 'users');
           console.log('Available usernames:', localUsers.map(u => u.username).join(', '));
@@ -171,7 +176,8 @@ export function LoginPage() {
           console.warn('⚠️ Local users.json returned status:', localResponse.status);
         }
       } catch (localError: any) {
-        console.warn('⚠️ Local users.json fetch failed:', localError.message);
+        // Silently skip local JSON lookup - this is expected in some environments
+        console.log('ℹ️ Local users.json not available, will try API or hardcoded users');
       }
 
       // If we got here, local auth didn't succeed
@@ -182,10 +188,8 @@ export function LoginPage() {
       console.log('Step 2: Trying API authentication...');
 
       // STEP 2: Fall back to API if not found locally
-      console.log('Attempting to connect to API server...');
-      
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout (reduced)
 
       try {
         const response = await fetch('https://api242.onrender.com/', {
@@ -196,11 +200,11 @@ export function LoginPage() {
           mode: 'cors',
           signal: controller.signal
         });
-        
+
         clearTimeout(timeoutId);
-        
-        console.log("API Response status:", response.status);
-        
+
+        console.log("✓ API server responded with status:", response.status);
+
         if (!response.ok) {
           throw new Error(`API returned status ${response.status}`);
         }
@@ -244,28 +248,34 @@ export function LoginPage() {
         }
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
-        
-        console.error('API Fetch Error:', fetchError);
-        
+
+        // Log for debugging but don't alarm the user
+        console.log('ℹ️ API server not available:', fetchError.name || fetchError.message);
+
         if (fetchError.name === 'AbortError') {
-          setError('⏱️ Connection timeout - API server is not responding.\n\nThe API server may be sleeping (Render free tier cold start).\n\n💡 Try local users: john/john, portia/portia, or guest/guest');
+          console.log('ℹ️ API request timed out after 10 seconds');
+          setError('⏱️ API server timeout (may be sleeping on Render free tier).\n\n💡 Use hardcoded credentials:\n• john/john (superuser)\n• portia/portia (superuser)\n• guest/guest (demo mode)');
           return;
         }
-        
+
         // Check if it's a network/CORS error
         if (fetchError.message === 'Failed to fetch' || fetchError instanceof TypeError) {
-          setError('🌐 Cannot reach API server.\n\nPossible reasons:\n• Server is sleeping (Render free tier)\n• CORS is blocking the request\n• Network connection issues\n• Server is offline\n\n💡 Try local users:\n• john/john (superuser)\n• portia/portia (superuser)\n• guest/guest (demo mode)');
+          console.log('ℹ️ Network or CORS error - this is expected if API is offline or sleeping');
+          setError('🌐 API server unavailable.\n\n💡 Use hardcoded credentials:\n• john/john (superuser)\n• portia/portia (superuser)\n• guest/guest (demo mode)');
           return;
         }
-        
+
         throw fetchError;
       }
     } catch (err: any) {
-      console.error('Login error:', err);
-      
+      // Only log unexpected errors, not authentication failures
+      if (err.message && !err.message.includes('Invalid username')) {
+        console.log('ℹ️ Login error:', err.message);
+      }
+
       // Provide more specific error messages
       let errorMessage = err.message || 'Unable to authenticate. Please check your credentials.';
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -434,14 +444,17 @@ export function LoginPage() {
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800 text-center">
-              <strong>💡 Local Test Users:</strong> Try <code className="bg-blue-100 px-1.5 py-0.5 rounded">john/john</code> or <code className="bg-blue-100 px-1.5 py-0.5 rounded">portia/portia</code> (superuser) or <code className="bg-blue-100 px-1.5 py-0.5 rounded">guest/guest</code> for demo mode!
+              <strong>💡 Hardcoded Test Users (Always Work):</strong><br />
+              <code className="bg-blue-100 px-1.5 py-0.5 rounded">john/john</code> or <code className="bg-blue-100 px-1.5 py-0.5 rounded">portia/portia</code> (superuser)<br />
+              <code className="bg-blue-100 px-1.5 py-0.5 rounded">guest/guest</code> (demo mode)
             </p>
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
-              Authentication: Local users first, then API fallback<br />
-              <code className="text-xs bg-gray-100 px-2 py-1 rounded">/data/users.json</code> → <code className="text-xs bg-gray-100 px-2 py-1 rounded">api242.onrender.com/</code>
+              <strong>Authentication Flow:</strong><br />
+              Hardcoded users → Local JSON → API fallback<br />
+              <span className="text-xs opacity-75">API may be sleeping (Render free tier)</span>
             </p>
           </div>
         </div>

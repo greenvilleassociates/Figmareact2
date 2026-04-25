@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router';
-import { Sidebar } from '@/app/components/Sidebar';
-import { Footer } from '@/app/components/Footer';
+import { Sidebar } from './Sidebar';
+import { Footer } from './Footer';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 

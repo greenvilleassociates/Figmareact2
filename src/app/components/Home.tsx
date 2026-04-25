@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye, AlertCircle } from 'lucide-react';
+import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye, AlertCircle, BookOpen, Award, Image as ImageIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import heroImage from 'figma:asset/c21f9f8e28cf8c09e6dbf7b8f2c775b59f88ce80.png';
 
@@ -16,12 +16,13 @@ export function Home() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [logoUrl, setLogoUrl] = useState('');
   const [isGuestMode, setIsGuestMode] = useState(false);
+  const [enabledPages, setEnabledPages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const savedLoginStatus = localStorage.getItem('isLoggedIn');
     const savedUser = localStorage.getItem('currentUser');
     const guestMode = localStorage.getItem('isGuestMode');
-    
+
     if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
       setIsLoggedIn(true);
       if (savedUser) {
@@ -32,6 +33,28 @@ export function Home() {
     // Check for guest mode
     if (guestMode && JSON.parse(guestMode)) {
       setIsGuestMode(true);
+    }
+
+    // Load enabled pages settings
+    const pageDefaults = {
+      about: true,
+      interests: true,
+      portfolio: true,
+      usclife: true,
+      vitae: true,
+      greenville: true,
+      publications: true,
+      awards: true,
+      certifications: true,
+      picturewall: true
+    };
+
+    const savedEnabledPages = localStorage.getItem('enabledPersonalPages');
+    if (savedEnabledPages) {
+      const saved = JSON.parse(savedEnabledPages);
+      setEnabledPages({ ...pageDefaults, ...saved });
+    } else {
+      setEnabledPages(pageDefaults);
     }
 
     // Load current project
@@ -84,47 +107,85 @@ export function Home() {
   }, []);
 
   const personalPages = [
-    { 
-      name: 'About Me', 
-      icon: User, 
+    {
+      key: 'about',
+      name: 'About Me',
+      icon: User,
       path: '/personal-pages/about',
       description: 'Learn more about who I am',
       color: 'bg-blue-50 text-blue-600 hover:bg-blue-100'
     },
-    { 
-      name: 'Interests', 
-      icon: Heart, 
+    {
+      key: 'interests',
+      name: 'Interests',
+      icon: Heart,
       path: '/personal-pages/interests',
       description: 'My hobbies and passions',
       color: 'bg-red-50 text-red-600 hover:bg-red-100'
     },
-    { 
-      name: 'Portfolio', 
-      icon: Briefcase, 
+    {
+      key: 'portfolio',
+      name: 'Portfolio',
+      icon: Briefcase,
       path: '/personal-pages/portfolio',
       description: 'View my work and projects',
       color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
     },
-    { 
-      name: 'Campus Life', 
-      icon: GraduationCap, 
+    {
+      key: 'usclife',
+      name: 'Campus Life',
+      icon: GraduationCap,
       path: '/personal-pages/usclife',
       description: 'My university experience',
       color: 'bg-green-50 text-green-600 hover:bg-green-100'
     },
-    { 
-      name: 'Vitae', 
-      icon: FileText, 
+    {
+      key: 'vitae',
+      name: 'Vitae',
+      icon: FileText,
       path: '/personal-pages/vitae',
       description: 'Professional resume and CV',
       color: 'bg-orange-50 text-orange-600 hover:bg-orange-100'
     },
-    { 
-      name: 'Greenville', 
-      icon: Building2, 
+    {
+      key: 'greenville',
+      name: 'Greenville',
+      icon: Building2,
       path: '/personal-pages/greenville',
       description: 'Corporate page information',
       color: 'bg-teal-50 text-teal-600 hover:bg-teal-100'
+    },
+    {
+      key: 'publications',
+      name: 'Publications',
+      icon: BookOpen,
+      path: '/personal-pages/publications',
+      description: 'Books and research articles',
+      color: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+    },
+    {
+      key: 'awards',
+      name: 'Awards',
+      icon: Award,
+      path: '/personal-pages/awards',
+      description: 'Recognition and achievements',
+      color: 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100'
+    },
+    {
+      key: 'certifications',
+      name: 'Certifications',
+      icon: Shield,
+      path: '/personal-pages/certifications',
+      description: 'Professional credentials',
+      color: 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100'
+    },
+    {
+      key: 'picturewall',
+      name: 'Picture Wall',
+      icon: ImageIcon,
+      path: '/personal-pages/picturewall',
+      description: 'Visual gallery',
+      color: 'bg-pink-50 text-pink-600 hover:bg-pink-100'
     },
   ];
 
@@ -174,26 +235,36 @@ export function Home() {
 
       {/* MyLinks Quick Access - Always visible */}
       <div className="bg-gradient-to-br from-[#4CBB17]/10 to-white rounded-xl border-2 border-[#4CBB17]/20 p-8 mb-12">
-        <h2 className="text-2xl font-semibold mb-6">MyLinks</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          {personalPages.map((page, index) => {
-            const Icon = page.icon;
-            return (
-              <Link
-                key={index}
-                to={page.path}
-                className="flex flex-col items-center text-center group"
-              >
-                <div className={`w-20 h-20 rounded-full ${page.color} flex items-center justify-center mb-3 transition-all shadow-sm group-hover:shadow-md`}>
-                  <Icon className="w-10 h-10" />
-                </div>
-                <h3 className="font-semibold text-sm mb-1 group-hover:text-blue-600 transition-colors">
-                  {page.name}
-                </h3>
-                <p className="text-xs text-gray-500">{page.description}</p>
-              </Link>
-            );
-          })}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold">MyLinks</h2>
+          <Link
+            to="/personal-pages"
+            className="text-sm text-[#4CBB17] hover:text-[#3DA013] font-semibold hover:underline"
+          >
+            View All →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {personalPages
+            .filter(page => enabledPages[page.key] ?? true)
+            .map((page, index) => {
+              const Icon = page.icon;
+              return (
+                <Link
+                  key={index}
+                  to={page.path}
+                  className="flex flex-col items-center text-center group"
+                >
+                  <div className={`w-20 h-20 rounded-full ${page.color} flex items-center justify-center mb-3 transition-all shadow-sm group-hover:shadow-md`}>
+                    <Icon className="w-10 h-10" />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1 group-hover:text-blue-600 transition-colors">
+                    {page.name}
+                  </h3>
+                  <p className="text-xs text-gray-500">{page.description}</p>
+                </Link>
+              );
+            })}
         </div>
       </div>
 
