@@ -1,4 +1,4 @@
-import { Home, Search, FileText, Github, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut, ChevronDown, FileBarChart, Package, Users, Calendar, Edit3, Save, X, HeartHandshake } from 'lucide-react';
+import { Home, Search, FileText, GitHub, BookOpen, FolderKanban, Files, Settings, LogIn, LogOut, ChevronDown, FileBarChart, Package, Users, Calendar, Edit3, Save, X, HeartHandshake } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
 import fusionLogo from 'figma:asset/aac5dfb9d0371a7143ad719802888a30e3ea5aed.png';

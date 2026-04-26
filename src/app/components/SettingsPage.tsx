@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, Github, FolderKanban, Image, RefreshCw, Download, Upload, Users, Edit2, Calendar, Palette } from 'lucide-react';
+import { Settings, Plus, Trash2, GitHub, FolderKanban, Image, RefreshCw, Download, Upload, Users, Edit2, Calendar, Palette } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { saveAssignment, saveProjectPhase } from '../utils/taskSync';
 import { resetGuestConfiguration } from '../utils/guestConfig';
