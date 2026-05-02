@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Trash2, GitHub, FolderKanban, Image, RefreshCw, Download, Upload, Users, Edit2, Calendar, Palette } from 'lucide-react';
+import { Settings, Plus, Trash2, Github, FolderKanban, Image, RefreshCw, Download, Upload, Users, Edit2, Calendar, Palette } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { saveAssignment, saveProjectPhase } from '../utils/taskSync';
 import { resetGuestConfiguration } from '../utils/guestConfig';
@@ -1187,7 +1187,7 @@ export function SettingsPage() {
         {/* GitHub Configuration */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-            <GitHub className="w-6 h-6 text-[#4CBB17]" />
+            <Github className="w-6 h-6 text-[#4CBB17]" />
             GitHub Configuration
           </h2>
           <div className="space-y-4">
