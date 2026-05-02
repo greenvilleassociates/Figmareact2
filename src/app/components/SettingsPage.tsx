@@ -1187,7 +1187,7 @@ export function SettingsPage() {
         {/* GitHub Configuration */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-            <Github className="w-6 h-6 text-[#4CBB17]" />
+            <GitHub className="w-6 h-6 text-[#4CBB17]" />
             GitHub Configuration
           </h2>
           <div className="space-y-4">
