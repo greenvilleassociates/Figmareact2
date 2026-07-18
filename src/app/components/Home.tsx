@@ -1,7 +1,8 @@
 import { Link } from 'react-router';
-import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye, AlertCircle, BookOpen, Award, Image as ImageIcon } from 'lucide-react';
+import { User, Heart, Briefcase, GraduationCap, FileText, Building2, UserPlus, LogIn, Shield, Eye, AlertCircle, BookOpen, Award, Image as ImageIcon, Trophy, TrendingUp, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import heroImage from 'figma:asset/c21f9f8e28cf8c09e6dbf7b8f2c775b59f88ce80.png';
+import cockyLogo from '../../imports/cocky.png';
 
 interface Project {
   id: string;
@@ -46,7 +47,11 @@ export function Home() {
       publications: true,
       awards: true,
       certifications: true,
-      picturewall: true
+      picturewall: true,
+      trophies: true,
+      matransactions: true,
+      capitoltechnology: true,
+      usc: true
     };
 
     const savedEnabledPages = localStorage.getItem('enabledPersonalPages');
@@ -148,14 +153,6 @@ export function Home() {
       color: 'bg-orange-50 text-orange-600 hover:bg-orange-100'
     },
     {
-      key: 'greenville',
-      name: 'Greenville',
-      icon: Building2,
-      path: '/personal-pages/greenville',
-      description: 'Corporate page information',
-      color: 'bg-teal-50 text-teal-600 hover:bg-teal-100'
-    },
-    {
       key: 'publications',
       name: 'Publications',
       icon: BookOpen,
@@ -187,6 +184,50 @@ export function Home() {
       description: 'Visual gallery',
       color: 'bg-pink-50 text-pink-600 hover:bg-pink-100'
     },
+    {
+      key: 'trophies',
+      name: 'Trophies',
+      icon: Trophy,
+      path: '/personal-pages/trophies',
+      description: 'Competitive achievements',
+      color: 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+    },
+    {
+      key: 'matransactions',
+      name: 'M&A Transactions',
+      icon: TrendingUp,
+      path: '/personal-pages/matransactions',
+      description: 'Mergers & acquisitions',
+      color: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+    },
+  ];
+
+  const corporatePages = [
+    {
+      key: 'greenville',
+      name: 'Greenville',
+      icon: Building2,
+      path: '/personal-pages/greenville',
+      description: 'Corporate page information',
+      color: 'bg-teal-50 text-teal-600 hover:bg-teal-100'
+    },
+    {
+      key: 'capitoltechnology',
+      name: 'Capitol Technology',
+      icon: Building2,
+      path: '/personal-pages/capitoltechnology',
+      description: 'Corporate technology page',
+      color: 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+    },
+    {
+      key: 'usc',
+      name: 'University of South Carolina',
+      icon: GraduationCap,
+      path: '/personal-pages/usc',
+      description: 'Go Gamecocks!',
+      color: 'bg-garnet-50 text-garnet-600 hover:bg-garnet-100',
+      logoUrl: cockyLogo
+    },
   ];
 
   return (
@@ -199,6 +240,24 @@ export function Home() {
           className="h-[350px]"
         />
       </div>
+
+      {/* Public Project Badge */}
+      {currentProject && (
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+            (currentProject as any).privacysetting === 'public' || (currentProject as any).type === 'public'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-blue-50 text-blue-700 border-blue-200'
+          }`}>
+            <Globe className="w-3.5 h-3.5" />
+            {(currentProject as any).privacysetting === 'public' || (currentProject as any).type === 'public' ? 'Public Project' : 'Project'}
+            {' '}· ID {currentProject.projectid || currentProject.id}
+          </span>
+          {(currentProject as any).username && (
+            <span className="text-xs text-gray-400">{(currentProject as any).username}'s site</span>
+          )}
+        </div>
+      )}
 
       {/* Guest Mode Banner */}
       {isGuestMode && (
@@ -257,6 +316,39 @@ export function Home() {
                 >
                   <div className={`w-20 h-20 rounded-full ${page.color} flex items-center justify-center mb-3 transition-all shadow-sm group-hover:shadow-md`}>
                     <Icon className="w-10 h-10" />
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1 group-hover:text-blue-600 transition-colors">
+                    {page.name}
+                  </h3>
+                  <p className="text-xs text-gray-500">{page.description}</p>
+                </Link>
+              );
+            })}
+        </div>
+      </div>
+
+      {/* CorporateLinks - Always visible */}
+      <div className="bg-gradient-to-br from-slate-500/10 to-white rounded-xl border-2 border-slate-500/20 p-8 mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold">CorporateLinks</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {corporatePages
+            .filter(page => enabledPages[page.key] ?? true)
+            .map((page, index) => {
+              const Icon = page.icon;
+              return (
+                <Link
+                  key={index}
+                  to={page.path}
+                  className="flex flex-col items-center text-center group"
+                >
+                  <div className={`w-20 h-20 rounded-full ${page.color} flex items-center justify-center mb-3 transition-all shadow-sm group-hover:shadow-md overflow-hidden`}>
+                    {page.logoUrl ? (
+                      <img src={page.logoUrl} alt={page.name} className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <Icon className="w-10 h-10" />
+                    )}
                   </div>
                   <h3 className="font-semibold text-sm mb-1 group-hover:text-blue-600 transition-colors">
                     {page.name}

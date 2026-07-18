@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { UserPlus, AlertCircle, Loader, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
+import { createPublicProject, syncPublicProjectToApi } from '../utils/publicProjectHelper';
+import { loadInstallationConfig, getGlobalProjectId } from '../utils/installationConfig';
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -60,9 +62,15 @@ export function RegisterPage() {
     setError('');
 
     try {
+      // Load installation config so globalProjectId is available
+      await loadInstallationConfig();
+
       // Generate userid
       const userid = Math.floor(Math.random() * 1000000);
-      
+
+      // The public project ID comes from the installation config — same for all users of this deployment
+      const publicprojectid = getGlobalProjectId();
+
       // Prepare registration data
       const registrationData = {
         userid: userid,
@@ -72,7 +80,8 @@ export function RegisterPage() {
         password: "string",  // API requires this field set to "string"
         firstname: formData.firstname || '',
         lastname: formData.lastname || '',
-        fullname: `${formData.firstname} ${formData.lastname}`.trim() || formData.username
+        fullname: `${formData.firstname} ${formData.lastname}`.trim() || formData.username,
+        publicprojectid: publicprojectid
       };
 
       console.log("Attempting registration with data:", registrationData);
@@ -109,6 +118,19 @@ export function RegisterPage() {
 
       const newUser = await response.json();
       console.log("New User Created", newUser);
+
+      // Auto-create a public project using the installation's globalProjectId
+      const publicProject = createPublicProject({
+        userid: newUser.userid || registrationData.userid,
+        username: newUser.username || registrationData.username,
+        mongoid: newUser._id || '',
+        email: newUser.email || registrationData.email,
+        projectid: newUser.publicprojectid || registrationData.publicprojectid
+      });
+      console.log('✅ Public project created:', publicProject.projectid);
+
+      // Best-effort sync to API (non-blocking)
+      syncPublicProjectToApi(publicProject);
 
       setSuccess(true);
 
@@ -147,7 +169,8 @@ export function RegisterPage() {
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-700 mb-1">Username:</p>
               <p className="font-semibold text-green-800 text-lg">{formData.username}</p>
-              <p className="text-sm text-gray-600 mt-2">Redirecting to login page...</p>
+              <p className="text-sm text-gray-600 mt-2">A public project has been created for your home page.</p>
+              <p className="text-sm text-gray-500 mt-1">Redirecting to login page...</p>
             </div>
           </div>
         </div>

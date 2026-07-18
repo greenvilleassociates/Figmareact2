@@ -3,15 +3,17 @@ import { LogIn, AlertCircle, Loader, Eye, EyeOff, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router';
 import { loadGuestConfiguration } from '../utils/guestConfig';
 import { sendLoginLog } from '../utils/loginLog';
+import { ensurePublicProject } from '../utils/publicProjectHelper';
+import { getGlobalProjectId } from '../utils/installationConfig';
 
 interface User {
-  _id?: string; // MongoDB auto-generated ID
-  id?: number; // May also exist in response
+  _id?: string;
+  id?: number;
   userid: number;
   useridstring: string;
   username: string;
-  password: string; // Encrypted password
-  plainpassword: string; // Plain text password
+  password: string;
+  plainpassword: string;
   firstname?: string;
   lastname?: string;
   fullname?: string;
@@ -21,6 +23,7 @@ interface User {
   defaultinstanceid?: string;
   defaultshardid?: string;
   role?: string;
+  publicprojectid?: string; // Global public project ID (set at registration)
 }
 
 export function LoginPage() {
@@ -76,12 +79,21 @@ export function LoginPage() {
           uid: hardcodedUser.userid,
           username: hardcodedUser.username,
           email: hardcodedUser.email,
-          role: hardcodedUser.role
+          role: hardcodedUser.role,
+          publicprojectid: getGlobalProjectId()
         }));
         
         // Send usage log
         await sendLoginLog(hardcodedUser.userid, `User ${hardcodedUser.username} logged in (hardcoded)`);
-        
+
+        // Ensure public project exists for this user
+        await ensurePublicProject({
+          userid: hardcodedUser.userid,
+          username: hardcodedUser.username,
+          mongoid: hardcodedUser._id,
+          email: hardcodedUser.email
+        });
+
         // Dispatch event for sidebar to update
         window.dispatchEvent(new Event('loginStatusChanged'));
         
@@ -146,17 +158,29 @@ export function LoginPage() {
               uid: localUser.userid,
               username: localUser.username,
               email: localUser.email,
-              role: localUser.role
+              role: localUser.role,
+              publicprojectid: (localUser as any).publicprojectid || getGlobalProjectId()
             }));
             
             // Send usage log
             await sendLoginLog(localUser.userid, `User ${localUser.username} logged in (local JSON)`);
-            
+
+            // Ensure public project exists (skip for guest — they use the default project)
+            if (!isGuest) {
+              await ensurePublicProject({
+                userid: localUser.userid,
+                username: localUser.username,
+                mongoid: localUser._id || '',
+                email: localUser.email || '',
+                projectid: (localUser as any).publicprojectid || undefined
+              });
+            }
+
             // Load guest configuration if needed
             if (isGuest) {
               await loadGuestConfiguration();
             }
-            
+
             // Dispatch event for sidebar to update
             window.dispatchEvent(new Event('loginStatusChanged'));
             
@@ -229,12 +253,22 @@ export function LoginPage() {
             uid: user.userid,
             username: user.username,
             email: user.email,
-            role: user.role
+            role: user.role,
+            publicprojectid: user.publicprojectid || getGlobalProjectId()
           }));
           
           // Send usage log
           await sendLoginLog(user.userid, `User ${user.username} logged in (API)`);
-          
+
+          // Ensure public project exists for this user
+          await ensurePublicProject({
+            userid: user.userid,
+            username: user.username,
+            mongoid: user._id || '',
+            email: user.email || '',
+            projectid: (user as any).publicprojectid || undefined
+          });
+
           // Dispatch event for sidebar to update
           window.dispatchEvent(new Event('loginStatusChanged'));
           
