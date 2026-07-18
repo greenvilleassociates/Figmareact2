@@ -48,22 +48,28 @@ export const loadInstallationConfig = async (): Promise<InstallationConfig | nul
     }
   }
 
-  // 3. Fetch from deployment
-  try {
-    const res = await fetch('/data/installationdefault.conf', {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const config: InstallationConfig = await res.json();
-    _memoryCache = config;
-    localStorage.setItem(CACHE_KEY, JSON.stringify(config));
-    console.log('✅ Installation config loaded — globalProjectId:', config.globalProjectId);
-    return config;
-  } catch (err) {
-    console.warn('⚠️ Could not load installationdefault.conf:', err);
-    return null;
+  // 3. Fetch from deployment — try multiple paths for dev/prod compatibility
+  const paths = [
+    `${import.meta.env.BASE_URL}data/installationdefault.conf`,
+    '/data/installationdefault.conf',
+  ];
+  for (const path of paths) {
+    try {
+      const res = await fetch(path, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text.trimStart().startsWith('<')) continue; // HTML 404 page
+      const config: InstallationConfig = JSON.parse(text);
+      _memoryCache = config;
+      localStorage.setItem(CACHE_KEY, JSON.stringify(config));
+      console.log('✅ Installation config loaded — globalProjectId:', config.globalProjectId);
+      return config;
+    } catch {
+      continue;
+    }
   }
+  console.warn('⚠️ Could not load installationdefault.conf from any path');
+  return null;
 };
 
 /** Synchronous read from cache only — call after loadInstallationConfig has resolved */
