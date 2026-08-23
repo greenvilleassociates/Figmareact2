@@ -6,7 +6,7 @@ import { sendLoginLog } from '../utils/loginLog';
 import { ensurePublicProject } from '../utils/publicProjectHelper';
 import { getGlobalProjectId } from '../utils/installationConfig';
 
-interface User {
+interface LocalUser {
   _id?: string;
   id?: number;
   userid: number;
@@ -24,6 +24,29 @@ interface User {
   defaultshardid?: string;
   role?: string;
   publicprojectid?: string;
+}
+
+interface AuthApiUser {
+  _id: string;
+  firstname?: string;
+  lastname?: string;
+  fullname?: string;
+  username: string;
+  email?: string;
+  role?: string;
+  activepictureurl?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface AuthLoginResponse {
+  code: number;
+  message: string;
+  mongoid: string;
+  mongousername: string;
+  token: string;
+  source: string;
+  user: AuthApiUser;
 }
 
 export function LoginPage() {
@@ -58,14 +81,12 @@ export function LoginPage() {
         const hardcodedUser = {
           _id: username === 'john' ? 'local_user_001' : 'local_user_002',
           userid: username === 'john' ? 1 : 2,
-          useridstring: username === 'john' ? 'USR001' : 'USR002',
           username: username,
           email: username === 'john' ? 'john@example.com' : 'portia@example.com',
           role: 'superuser',
           firstname: username === 'john' ? 'John' : 'Portia',
           lastname: username === 'john' ? 'Doe' : 'Smith',
           fullname: username === 'john' ? 'John Doe' : 'Portia Smith',
-          displayname: username === 'john' ? 'John Doe' : 'Portia Smith'
         };
 
         localStorage.setItem('isLoggedIn', JSON.stringify(true));
@@ -77,6 +98,9 @@ export function LoginPage() {
           username: hardcodedUser.username,
           email: hardcodedUser.email,
           role: hardcodedUser.role,
+          firstname: hardcodedUser.firstname,
+          lastname: hardcodedUser.lastname,
+          fullname: hardcodedUser.fullname,
           publicprojectid: getGlobalProjectId()
         }));
 
@@ -109,9 +133,9 @@ export function LoginPage() {
           if (!contentType || !contentType.includes('application/json')) {
             throw new Error('Not JSON');
           }
-          const localUsers: User[] = await localResponse.json();
+          const localUsers: LocalUser[] = await localResponse.json();
           const localUser = localUsers.find(
-            (u) => u.username === username && u.plainpassword === password
+            (u: LocalUser) => u.username === username && u.plainpassword === password
           );
 
           if (localUser) {
@@ -187,6 +211,8 @@ export function LoginPage() {
 
         clearTimeout(timeoutId);
 
+        console.log('✓ /auth/login responded with status:', response.status);
+
         if (response.status === 401 || response.status === 403) {
           setError('❌ Invalid username or password.\n\n💡 Try: john/john, portia/portia, or guest/guest');
           setLoading(false);
@@ -197,27 +223,35 @@ export function LoginPage() {
           throw new Error(`API returned status ${response.status}`);
         }
 
-        const user: User = await response.json();
+        const authResponse: AuthLoginResponse = await response.json();
+        const user = authResponse.user;
+        const mongoid = authResponse.mongoid || user._id;
+        console.log('✅ User authenticated from API:', user.username);
 
         localStorage.setItem('isLoggedIn', JSON.stringify(true));
         localStorage.removeItem('isGuestMode');
+        localStorage.setItem('authToken', authResponse.token);
         localStorage.setItem('currentUser', JSON.stringify({
-          _id: user._id,
-          mongoid: user._id,
-          uid: user.userid,
+          _id: mongoid,
+          mongoid: mongoid,
+          uid: mongoid,
           username: user.username,
-          email: user.email,
-          role: user.role,
-          publicprojectid: user.publicprojectid || getGlobalProjectId()
+          email: user.email || '',
+          role: user.role || 'registered',
+          firstname: user.firstname || '',
+          lastname: user.lastname || '',
+          fullname: user.fullname || user.username,
+          activepictureurl: user.activepictureurl || '',
+          publicprojectid: getGlobalProjectId()
         }));
 
-        await sendLoginLog(user.userid, `User ${user.username} logged in (API /auth/login)`);
+        await sendLoginLog(0, `User ${user.username} logged in (API /auth/login)`);
         await ensurePublicProject({
-          userid: user.userid,
+          userid: 0,
           username: user.username,
-          mongoid: user._id || '',
+          mongoid: mongoid,
           email: user.email || '',
-          projectid: user.publicprojectid || undefined
+          projectid: undefined
         });
 
         window.dispatchEvent(new Event('loginStatusChanged'));
@@ -249,6 +283,7 @@ export function LoginPage() {
     localStorage.setItem('isLoggedIn', JSON.stringify(false));
     localStorage.removeItem('currentUser');
     localStorage.removeItem('isGuestMode');
+    localStorage.removeItem('authToken');
     window.dispatchEvent(new Event('loginStatusChanged'));
     setIsLoggedIn(false);
     setUsername('');
@@ -276,9 +311,12 @@ export function LoginPage() {
 
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-700 mb-1">Logged in as:</p>
-              <p className="font-semibold text-green-800 text-lg">{currentUser.username || 'User'}</p>
+              <p className="font-semibold text-green-800 text-lg">{currentUser.fullname || currentUser.username || 'User'}</p>
               {currentUser.email && (
                 <p className="text-sm text-gray-600 mt-1">{currentUser.email}</p>
+              )}
+              {currentUser.role && (
+                <p className="text-xs text-gray-500 mt-1 capitalize">{currentUser.role}</p>
               )}
             </div>
 
