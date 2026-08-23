@@ -10,6 +10,8 @@ interface Project {
   instanceid?: string;
   projectid?: string;
   projectname?: string;
+  description?: string;
+  projectowner?: string;
   githubRepoUrl?: string;
   githubPagesUrl?: string;
   hostingProviderName?: string;
@@ -122,6 +124,8 @@ export function MyProjectsPage() {
           projectid: p.projectid,
           projectname: p.projectname,
           instanceid: p.instanceid,
+          description: p.description,
+          projectowner: p.projectowner,
           githubRepoUrl: p.githubRepoUrl,
           githubPagesUrl: p.githubPagesUrl,
           hostingProviderName: p.hostingProviderName,
@@ -722,23 +726,36 @@ export function MyProjectsPage() {
                           <CheckCircle2 className="w-6 h-6 text-[#4CBB17]" />
                         )}
                       </div>
-                      
-                      <h3 className="font-bold text-lg mb-2 truncate" title={project.name}>
+
+                      <h3 className="font-bold text-lg mb-1 truncate" title={project.name}>
                         {project.name}
                       </h3>
-                      
+
+                      {project.description && (
+                        <p className="text-xs text-gray-500 mb-2 line-clamp-2" title={project.description}>
+                          {project.description}
+                        </p>
+                      )}
+
+                      {project.projectowner && (
+                        <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                          <User className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{project.projectowner}</span>
+                        </p>
+                      )}
+
                       {project.projectid && (
-                        <p className="text-sm text-gray-500 mb-1">
+                        <p className="text-xs text-gray-400 mb-1">
                           ID: {project.projectid}
                         </p>
                       )}
-                      
+
                       {project.instanceid && (
                         <p className="text-xs text-gray-400 truncate" title={project.instanceid}>
                           Instance: {project.instanceid}
                         </p>
                       )}
-                      
+
                       <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-4 text-xs text-gray-500">
                         {project.githubRepoUrl && (
                           <div className="flex items-center gap-1">
@@ -784,12 +801,18 @@ export function MyProjectsPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* User Information */}
+                    {/* Owner Information */}
                     <div className="bg-white rounded-lg p-3 border border-gray-200">
                       <div className="flex items-center gap-2 mb-2">
                         <User className="w-4 h-4 text-[#4CBB17]" />
                         <h4 className="font-semibold text-xs">Owner Information</h4>
                       </div>
+                      {selectedProject.projectowner && (
+                        <p className="text-xs mb-1">
+                          <span className="text-gray-500">Project Owner:</span>
+                          <span className="ml-2 font-medium">{selectedProject.projectowner}</span>
+                        </p>
+                      )}
                       {selectedProject.username && (
                         <p className="text-xs mb-1">
                           <span className="text-gray-500">Username:</span>
@@ -814,6 +837,12 @@ export function MyProjectsPage() {
                         <p className="text-xs mb-1">
                           <span className="text-gray-500">Name:</span>
                           <span className="ml-2 font-medium">{selectedProject.projectname}</span>
+                        </p>
+                      )}
+                      {selectedProject.description && (
+                        <p className="text-xs mb-1">
+                          <span className="text-gray-500">Description:</span>
+                          <span className="ml-2 font-medium">{selectedProject.description}</span>
                         </p>
                       )}
                       {selectedProject.instanceid && (
