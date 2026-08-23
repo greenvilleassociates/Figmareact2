@@ -310,6 +310,7 @@ export function MyProjectsPage() {
         subaccount: generatedSubAccountId,
         companyid: generatedCustomerId,
         username: currentUser.username || '',
+        projectowner: currentUser.fullname || currentUser.username || '',
         logoUrl: ''
       };
 
@@ -726,7 +727,7 @@ export function MyProjectsPage() {
                           <CheckCircle2 className="w-6 h-6 text-[#4CBB17]" />
                         )}
                       </div>
-
+                      
                       <h3 className="font-bold text-lg mb-1 truncate" title={project.name}>
                         {project.name}
                       </h3>
