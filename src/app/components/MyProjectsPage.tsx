@@ -315,13 +315,13 @@ export function MyProjectsPage() {
       };
 
       const userMongoid = currentUser.mongoid || currentUser._id;
-      const apiUrl = `https://api242.onrender.com/api/projects/mongo/${userMongoid}`;
+      const apiUrl = `https://api242.onrender.com/api/projects`;
 
       console.log('Creating project for user mongoid:', userMongoid);
       console.log('POST URL:', apiUrl);
       console.log('POST Data:', apiData);
 
-      // POST to API using mongoid endpoint
+      // POST to API
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
