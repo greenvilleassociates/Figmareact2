@@ -25,6 +25,9 @@ import { UniversityOfPennsylvaniaPage } from './components/UniversityOfPennsylva
 import { UniversityOfMichiganPage } from './components/UniversityOfMichiganPage';
 import { UniversityOfDelawarePage } from './components/UniversityOfDelawarePage';
 import { UNCWilmingtonPage } from './components/UNCWilmingtonPage';
+import { UniversityOfTexasPage } from './components/UniversityOfTexasPage';
+import { OldDominionUniversityPage } from './components/OldDominionUniversityPage';
+import { WilliamAndMaryPage } from './components/WilliamAndMaryPage';
 import { Assignment1 } from './components/assignments/Assignment1';
 import { Assignment2 } from './components/assignments/Assignment2';
 import { Assignment3 } from './components/assignments/Assignment3';
@@ -86,6 +89,9 @@ export const router = createBrowserRouter([
       { path: 'personal-pages/umich', Component: UniversityOfMichiganPage },
       { path: 'personal-pages/udel', Component: UniversityOfDelawarePage },
       { path: 'personal-pages/uncw', Component: UNCWilmingtonPage },
+      { path: 'personal-pages/utexas', Component: UniversityOfTexasPage },
+      { path: 'personal-pages/odu', Component: OldDominionUniversityPage },
+      { path: 'personal-pages/wm', Component: WilliamAndMaryPage },
       { path: 'assignments', Component: AssignmentsPage },
       { path: 'assignments/1', Component: Assignment1 },
       { path: 'assignments/2', Component: Assignment2 },

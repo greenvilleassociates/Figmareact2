@@ -26,26 +26,21 @@ export function Home() {
 
     if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
       setIsLoggedIn(true);
-      if (savedUser) {
-        setCurrentUser(JSON.parse(savedUser));
-      }
+      if (savedUser) setCurrentUser(JSON.parse(savedUser));
     }
-
-    if (guestMode && JSON.parse(guestMode)) {
-      setIsGuestMode(true);
-    }
+    if (guestMode && JSON.parse(guestMode)) setIsGuestMode(true);
 
     const pageDefaults = {
       about: true, interests: true, portfolio: true, usclife: true, vitae: true,
       greenville: true, publications: true, awards: true, certifications: true,
       picturewall: true, trophies: true, matransactions: true, capitoltechnology: true,
-      usc: true, upenn: true, umich: true, udel: true, uncw: true
+      usc: true, upenn: true, umich: true, udel: true, uncw: true,
+      utexas: true, odu: true, wm: true
     };
 
     const savedEnabledPages = localStorage.getItem('enabledPersonalPages');
     if (savedEnabledPages) {
-      const saved = JSON.parse(savedEnabledPages);
-      setEnabledPages({ ...pageDefaults, ...saved });
+      setEnabledPages({ ...pageDefaults, ...JSON.parse(savedEnabledPages) });
     } else {
       setEnabledPages(pageDefaults);
     }
@@ -55,28 +50,24 @@ export function Home() {
       const project = JSON.parse(savedProject);
       setCurrentProject(project);
       const projectid = project.projectid || project.id;
-      const projectLogo = project.logoUrl;
       const savedLogo = localStorage.getItem(`${projectid}_logourl`);
-      if (projectLogo) setLogoUrl(projectLogo);
-      else if (savedLogo) setLogoUrl(savedLogo);
-      else setLogoUrl(heroImage);
+      setLogoUrl(project.logoUrl || savedLogo || heroImage);
     } else {
       setLogoUrl(heroImage);
     }
 
     const handleLoginChange = () => {
-      const savedLoginStatus = localStorage.getItem('isLoggedIn');
-      const savedUser = localStorage.getItem('currentUser');
-      const guestMode = localStorage.getItem('isGuestMode');
-      if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
+      const status = localStorage.getItem('isLoggedIn');
+      const user = localStorage.getItem('currentUser');
+      const guest = localStorage.getItem('isGuestMode');
+      if (status && JSON.parse(status)) {
         setIsLoggedIn(true);
-        if (savedUser) setCurrentUser(JSON.parse(savedUser));
+        if (user) setCurrentUser(JSON.parse(user));
       } else {
         setIsLoggedIn(false);
         setCurrentUser(null);
       }
-      if (guestMode && JSON.parse(guestMode)) setIsGuestMode(true);
-      else setIsGuestMode(false);
+      setIsGuestMode(!!(guest && JSON.parse(guest)));
     };
 
     window.addEventListener('loginStatusChanged', handleLoginChange);
@@ -100,11 +91,14 @@ export function Home() {
   const corporatePages = [
     { key: 'greenville', name: 'Greenville', icon: Building2, path: '/personal-pages/greenville', description: 'Corporate page information', color: 'bg-teal-50 text-teal-600 hover:bg-teal-100' },
     { key: 'capitoltechnology', name: 'Capitol Technology', icon: Building2, path: '/personal-pages/capitoltechnology', description: 'Corporate technology page', color: 'bg-slate-50 text-slate-600 hover:bg-slate-100' },
-    { key: 'usc', name: 'University of South Carolina', icon: GraduationCap, path: '/personal-pages/usc', description: 'Go Gamecocks!', color: 'bg-garnet-50 text-garnet-600 hover:bg-garnet-100', logoUrl: cockyLogo },
+    { key: 'usc', name: 'University of South Carolina', icon: GraduationCap, path: '/personal-pages/usc', description: 'Go Gamecocks!', color: 'bg-red-50 text-red-800 hover:bg-red-100', logoUrl: cockyLogo },
     { key: 'upenn', name: 'University of Pennsylvania', icon: GraduationCap, path: '/personal-pages/upenn', description: 'Quakers · Philadelphia, PA', color: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
     { key: 'umich', name: 'University of Michigan', icon: GraduationCap, path: '/personal-pages/umich', description: 'Wolverines · Ann Arbor, MI', color: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' },
     { key: 'udel', name: 'University of Delaware', icon: GraduationCap, path: '/personal-pages/udel', description: 'Blue Hens · Newark, DE', color: 'bg-sky-50 text-sky-700 hover:bg-sky-100' },
     { key: 'uncw', name: 'UNC Wilmington', icon: GraduationCap, path: '/personal-pages/uncw', description: 'Seahawks · Wilmington, NC', color: 'bg-teal-50 text-teal-700 hover:bg-teal-100' },
+    { key: 'utexas', name: 'University of Texas', icon: GraduationCap, path: '/personal-pages/utexas', description: 'Longhorns · Austin, TX', color: 'bg-orange-50 text-orange-700 hover:bg-orange-100' },
+    { key: 'odu', name: 'Old Dominion University', icon: GraduationCap, path: '/personal-pages/odu', description: 'Monarchs · Norfolk, VA', color: 'bg-blue-50 text-blue-800 hover:bg-blue-100' },
+    { key: 'wm', name: 'William & Mary', icon: GraduationCap, path: '/personal-pages/wm', description: 'Tribe · Williamsburg, VA', color: 'bg-green-50 text-green-800 hover:bg-green-100' },
   ];
 
   return (
