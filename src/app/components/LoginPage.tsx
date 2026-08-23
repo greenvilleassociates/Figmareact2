@@ -186,7 +186,6 @@ export function LoginPage() {
 
       if (localAuthSuccess) return;
 
-      // Local-only mode: do not fall through to API
       if (localOnly) {
         setError('❌ Invalid username or password.\n\n💡 Local login accepts:\n• john/john\n• portia/portia\n• guest/guest');
         setLoading(false);
@@ -296,7 +295,6 @@ export function LoginPage() {
 
   if (isLoggedIn) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-
     return (
       <div className="flex-1 bg-gray-50 p-12 overflow-auto max-[999px]:text-[9pt] flex items-center justify-center">
         <div className="max-w-md w-full">
@@ -308,24 +306,13 @@ export function LoginPage() {
               <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
               <p className="text-gray-600">You are currently logged in</p>
             </div>
-
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-700 mb-1">Logged in as:</p>
               <p className="font-semibold text-green-800 text-lg">{currentUser.fullname || currentUser.username || 'User'}</p>
-              {currentUser.email && (
-                <p className="text-sm text-gray-600 mt-1">{currentUser.email}</p>
-              )}
-              {currentUser.role && (
-                <p className="text-xs text-gray-500 mt-1 capitalize">{currentUser.role}</p>
-              )}
+              {currentUser.email && <p className="text-sm text-gray-600 mt-1">{currentUser.email}</p>}
+              {currentUser.role && <p className="text-xs text-gray-500 mt-1 capitalize">{currentUser.role}</p>}
             </div>
-
-            <button
-              onClick={handleLogout}
-              className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold"
-            >
-              Logout
-            </button>
+            <button onClick={handleLogout} className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold">Logout</button>
           </div>
         </div>
       </div>
@@ -354,34 +341,13 @@ export function LoginPage() {
           <div className="space-y-4 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Enter your username"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17] focus:border-transparent"
-                disabled={loading}
-              />
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} onKeyPress={handleKeyPress} placeholder="Enter your username" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17] focus:border-transparent" disabled={loading} />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
               <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Enter your password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17] focus:border-transparent"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} onKeyPress={handleKeyPress} placeholder="Enter your password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CBB17] focus:border-transparent" disabled={loading} />
+                <button type="button" className="absolute right-3 top-3 text-gray-500 hover:text-gray-700" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
@@ -389,60 +355,26 @@ export function LoginPage() {
           </div>
 
           <label className="flex items-center gap-3 cursor-pointer select-none mb-4">
-            <div
-              className="w-10 h-5 rounded-full flex items-center px-0.5 transition-colors duration-200 flex-shrink-0"
-              style={{ backgroundColor: localOnly ? '#4CBB17' : '#D1D5DB' }}
-            >
-              <div
-                className="w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
-                style={{ transform: localOnly ? 'translateX(20px)' : 'translateX(0)' }}
-              />
+            <div className="w-10 h-5 rounded-full flex items-center px-0.5 transition-colors duration-200 flex-shrink-0" style={{ backgroundColor: localOnly ? '#4CBB17' : '#D1D5DB' }}>
+              <div className="w-4 h-4 bg-white rounded-full shadow transition-transform duration-200" style={{ transform: localOnly ? 'translateX(20px)' : 'translateX(0)' }} />
             </div>
-            <input
-              type="checkbox"
-              checked={localOnly}
-              onChange={(e) => setLocalOnly(e.target.checked)}
-              className="sr-only"
-            />
-            <span className="text-sm text-gray-700">
-              Local login only <span className="text-gray-400">(hardcoded users, no API call)</span>
-            </span>
+            <input type="checkbox" checked={localOnly} onChange={(e) => setLocalOnly(e.target.checked)} className="sr-only" />
+            <span className="text-sm text-gray-700">Local login only <span className="text-gray-400">(hardcoded users, no API call)</span></span>
           </label>
 
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <><Loader className="w-5 h-5 animate-spin" />Authenticating...</>
-            ) : (
-              <><LogIn className="w-5 h-5" />Login</>
-            )}
+          <button onClick={handleLogin} disabled={loading} className="w-full px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? <><Loader className="w-5 h-5 animate-spin" />Authenticating...</> : <><LogIn className="w-5 h-5" />Login</>}
           </button>
 
           <div className="mt-3">
-            <button
-              onClick={() => {
-                setUsername('guest');
-                setPassword('guest');
-                setTimeout(() => handleLogin(), 100);
-              }}
-              disabled={loading}
-              className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={() => { setUsername('guest'); setPassword('guest'); setTimeout(() => handleLogin(), 100); }} disabled={loading} className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
               <LogIn className="w-5 h-5" />
               Continue as Guest (Demo Mode)
             </button>
           </div>
 
           <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-[#4CBB17] hover:text-[#3DA013] font-semibold hover:underline">
-                Register here
-              </Link>
-            </p>
+            <p className="text-sm text-gray-600">Don't have an account?{' '}<Link to="/register" className="text-[#4CBB17] hover:text-[#3DA013] font-semibold hover:underline">Register here</Link></p>
           </div>
 
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
