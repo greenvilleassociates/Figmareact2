@@ -68,8 +68,32 @@ export const loadInstallationConfig = async (): Promise<InstallationConfig | nul
       continue;
     }
   }
-  console.warn('⚠️ Could not load installationdefault.conf from any path');
-  return null;
+  // Inline fallback — keeps the app functional when the file can't be fetched
+  const fallback: InstallationConfig = {
+    installationId: 'usc242',
+    tenantId: 'jssg33',
+    globalProjectId: '24200101',
+    projectName: 'USC CSCE 242 - Public Site',
+    projectType: 'public',
+    privacysetting: 'public',
+    description: '',
+    institution: 'University of South Carolina',
+    course: 'CSCE 242',
+    version: '2026.7.18',
+    deployedAt: '2026-07-18',
+    apiBase: 'https://api242.onrender.com',
+    account: 'jssg33',
+    subaccount: 'usc242',
+    companyid: '',
+    instanceid: 'usc242',
+    githubRepoUrl: 'https://github.com/greenvilleassociates/Figmareact2',
+    githubPagesUrl: 'https://jssg33.github.io/usc242',
+    hostingProviderName: 'Render',
+    hostingProviderUrl: 'https://render.com',
+  };
+  _memoryCache = fallback;
+  console.info('ℹ️ Using inline fallback installation config (globalProjectId: 24200101)');
+  return fallback;
 };
 
 /** Synchronous read from cache only — call after loadInstallationConfig has resolved */
