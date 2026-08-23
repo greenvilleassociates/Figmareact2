@@ -23,7 +23,7 @@ interface User {
   defaultinstanceid?: string;
   defaultshardid?: string;
   role?: string;
-  publicprojectid?: string; // Global public project ID (set at registration)
+  publicprojectid?: string;
 }
 
 export function LoginPage() {
@@ -33,9 +33,9 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [localOnly, setLocalOnly] = useState(false);
   const navigate = useNavigate();
 
-  // Check if already logged in
   useEffect(() => {
     const savedLoginStatus = localStorage.getItem('isLoggedIn');
     if (savedLoginStatus && JSON.parse(savedLoginStatus)) {
@@ -53,7 +53,6 @@ export function LoginPage() {
     setError('');
 
     try {
-      // HARDCODED USERS CHECK FIRST
       if ((username === 'john' && password === 'john') || (username === 'portia' && password === 'portia')) {
         console.log('✅ User authenticated via hardcoded credentials:', username);
         
@@ -70,7 +69,6 @@ export function LoginPage() {
           displayname: username === 'john' ? 'John Doe' : 'Portia Smith'
         };
         
-        // Successful login
         localStorage.setItem('isLoggedIn', JSON.stringify(true));
         localStorage.removeItem('isGuestMode');
         localStorage.setItem('currentUser', JSON.stringify({
@@ -83,10 +81,7 @@ export function LoginPage() {
           publicprojectid: getGlobalProjectId()
         }));
         
-        // Send usage log
         await sendLoginLog(hardcodedUser.userid, `User ${hardcodedUser.username} logged in (hardcoded)`);
-
-        // Ensure public project exists for this user
         await ensurePublicProject({
           userid: hardcodedUser.userid,
           username: hardcodedUser.username,
@@ -94,30 +89,20 @@ export function LoginPage() {
           email: hardcodedUser.email
         });
 
-        // Dispatch event for sidebar to update
         window.dispatchEvent(new Event('loginStatusChanged'));
-        
         setIsLoggedIn(true);
-        
-        // Redirect to home page after successful login
-        setTimeout(() => {
-          navigate('/');
-        }, 500);
+        setTimeout(() => { navigate('/'); }, 500);
         setLoading(false);
         return;
       }
 
-      // STEP 1: Check local users.json first
       console.log('Step 1: Checking local users database...');
-      
       let localAuthSuccess = false;
       
       try {
         const localResponse = await fetch('/data/users.json', {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          }
+          headers: { 'Accept': 'application/json' }
         });
 
         console.log('Local users.json response:', localResponse.status);
@@ -130,21 +115,15 @@ export function LoginPage() {
           }
           const localUsers: User[] = await localResponse.json();
           console.log('✓ Local users loaded:', localUsers.length, 'users');
-          console.log('Available usernames:', localUsers.map(u => u.username).join(', '));
-          console.log('Trying to match:', username);
           
-          // Find matching user in local database
           const localUser = localUsers.find(
             (u) => u.username === username && u.plainpassword === password
           );
           
           if (localUser) {
             console.log('✅ User authenticated from local database:', localUser.username);
-            
-            // Check if this is guest mode
             const isGuest = localUser.role === 'guest';
             
-            // Successful login from local database
             localStorage.setItem('isLoggedIn', JSON.stringify(true));
             if (isGuest) {
               localStorage.setItem('isGuestMode', JSON.stringify(true));
@@ -162,10 +141,8 @@ export function LoginPage() {
               publicprojectid: (localUser as any).publicprojectid || getGlobalProjectId()
             }));
             
-            // Send usage log
             await sendLoginLog(localUser.userid, `User ${localUser.username} logged in (local JSON)`);
 
-            // Ensure public project exists (skip for guest — they use the default project)
             if (!isGuest) {
               await ensurePublicProject({
                 userid: localUser.userid,
@@ -176,21 +153,14 @@ export function LoginPage() {
               });
             }
 
-            // Load guest configuration if needed
             if (isGuest) {
               await loadGuestConfiguration();
             }
 
-            // Dispatch event for sidebar to update
             window.dispatchEvent(new Event('loginStatusChanged'));
-            
             setIsLoggedIn(true);
             localAuthSuccess = true;
-            
-            // Redirect to home page after successful login
-            setTimeout(() => {
-              navigate('/');
-            }, 500);
+            setTimeout(() => { navigate('/'); }, 500);
             setLoading(false);
             return;
           } else {
@@ -200,43 +170,38 @@ export function LoginPage() {
           console.warn('⚠️ Local users.json returned status:', localResponse.status);
         }
       } catch (localError: any) {
-        // Silently skip local JSON lookup - this is expected in some environments
         console.log('ℹ️ Local users.json not available, will try API or hardcoded users');
       }
 
-      // If we got here, local auth didn't succeed
-      if (localAuthSuccess) {
-        return; // Should not reach here, but just in case
+      if (localAuthSuccess) return;
+
+      if (localOnly) {
+        setError('❌ Invalid username or password.\n\n💡 Local login accepts:\n• john/john\n• portia/portia\n• guest/guest');
+        setLoading(false);
+        return;
       }
 
       console.log('Step 2: Trying API authentication...');
 
-      // STEP 2: Fall back to API if not found locally
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout (reduced)
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
         const response = await fetch('https://api242.onrender.com/', {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
+          headers: { 'Accept': 'application/json' },
           mode: 'cors',
           signal: controller.signal
         });
 
         clearTimeout(timeoutId);
+        console.log('✓ API server responded with status:', response.status);
 
-        console.log("✓ API server responded with status:", response.status);
-
-        if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`API returned status ${response.status}`);
 
         const users: User[] = await response.json();
-        console.log("✓ API users fetched successfully:", users.length);
+        console.log('✓ API users fetched successfully:', users.length);
 
-        // Find matching user from API
         const user = users.find(
           (u) => u.username === username && u.plainpassword === password
         );
@@ -244,9 +209,8 @@ export function LoginPage() {
         if (user) {
           console.log('✅ User authenticated from API');
           
-          // Successful login from API
           localStorage.setItem('isLoggedIn', JSON.stringify(true));
-          localStorage.removeItem('isGuestMode'); // API users are not guests
+          localStorage.removeItem('isGuestMode');
           localStorage.setItem('currentUser', JSON.stringify({
             _id: user._id,
             mongoid: user._id,
@@ -257,10 +221,7 @@ export function LoginPage() {
             publicprojectid: user.publicprojectid || getGlobalProjectId()
           }));
           
-          // Send usage log
           await sendLoginLog(user.userid, `User ${user.username} logged in (API)`);
-
-          // Ensure public project exists for this user
           await ensurePublicProject({
             userid: user.userid,
             username: user.username,
@@ -269,32 +230,22 @@ export function LoginPage() {
             projectid: (user as any).publicprojectid || undefined
           });
 
-          // Dispatch event for sidebar to update
           window.dispatchEvent(new Event('loginStatusChanged'));
-          
           setIsLoggedIn(true);
-          // Redirect to home page after successful login
-          setTimeout(() => {
-            navigate('/');
-          }, 500);
+          setTimeout(() => { navigate('/'); }, 500);
         } else {
           setError('❌ Invalid username or password.\n\n💡 Try: john/john, portia/portia, or guest/guest');
         }
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
-
-        // Log for debugging but don't alarm the user
         console.log('ℹ️ API server not available:', fetchError.name || fetchError.message);
 
         if (fetchError.name === 'AbortError') {
-          console.log('ℹ️ API request timed out after 10 seconds');
           setError('⏱️ API server timeout (may be sleeping on Render free tier).\n\n💡 Use hardcoded credentials:\n• john/john (superuser)\n• portia/portia (superuser)\n• guest/guest (demo mode)');
           return;
         }
 
-        // Check if it's a network/CORS error
         if (fetchError.message === 'Failed to fetch' || fetchError instanceof TypeError) {
-          console.log('ℹ️ Network or CORS error - this is expected if API is offline or sleeping');
           setError('🌐 API server unavailable.\n\n💡 Use hardcoded credentials:\n• john/john (superuser)\n• portia/portia (superuser)\n• guest/guest (demo mode)');
           return;
         }
@@ -302,15 +253,10 @@ export function LoginPage() {
         throw fetchError;
       }
     } catch (err: any) {
-      // Only log unexpected errors, not authentication failures
       if (err.message && !err.message.includes('Invalid username')) {
         console.log('ℹ️ Login error:', err.message);
       }
-
-      // Provide more specific error messages
-      let errorMessage = err.message || 'Unable to authenticate. Please check your credentials.';
-
-      setError(errorMessage);
+      setError(err.message || 'Unable to authenticate. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -327,14 +273,11 @@ export function LoginPage() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
+    if (e.key === 'Enter') handleLogin();
   };
 
   if (isLoggedIn) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    
     return (
       <div className="flex-1 bg-gray-50 p-12 overflow-auto max-[999px]:text-[9pt] flex items-center justify-center">
         <div className="max-w-md w-full">
@@ -346,7 +289,6 @@ export function LoginPage() {
               <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
               <p className="text-gray-600">You are currently logged in</p>
             </div>
-
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-700 mb-1">Logged in as:</p>
               <p className="font-semibold text-green-800 text-lg">{currentUser.username || 'User'}</p>
@@ -354,7 +296,6 @@ export function LoginPage() {
                 <p className="text-sm text-gray-600 mt-1">{currentUser.email}</p>
               )}
             </div>
-
             <button
               onClick={handleLogout}
               className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold"
@@ -375,8 +316,8 @@ export function LoginPage() {
             <div className="w-16 h-16 bg-[#4CBB17] rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Login</h1>
-            <p className="text-gray-600">Access Fusion Project Manager 26.02</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">API Login</h1>
+            <p className="text-gray-600">Access Fusion Project Manager 2026.7.18</p>
           </div>
 
           {error && (
@@ -388,9 +329,7 @@ export function LoginPage() {
 
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
               <input
                 type="text"
                 value={username}
@@ -401,11 +340,8 @@ export function LoginPage() {
                 disabled={loading}
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -421,15 +357,32 @@ export function LoginPage() {
                   className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
           </div>
+
+          <label className="flex items-center gap-3 cursor-pointer select-none mb-4">
+            <div
+              className="w-10 h-5 rounded-full flex items-center px-0.5 transition-colors duration-200 flex-shrink-0"
+              style={{ backgroundColor: localOnly ? '#4CBB17' : '#D1D5DB' }}
+            >
+              <div
+                className="w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
+                style={{ transform: localOnly ? 'translateX(20px)' : 'translateX(0)' }}
+              />
+            </div>
+            <input
+              type="checkbox"
+              checked={localOnly}
+              onChange={(e) => setLocalOnly(e.target.checked)}
+              className="sr-only"
+            />
+            <span className="text-sm text-gray-700">
+              Local login only <span className="text-gray-400">(hardcoded users, no API call)</span>
+            </span>
+          </label>
 
           <button
             onClick={handleLogin}
@@ -437,25 +390,15 @@ export function LoginPage() {
             className="w-full px-6 py-3 bg-[#4CBB17] text-white rounded-lg hover:bg-[#3DA013] transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                Authenticating...
-              </>
+              <><Loader className="w-5 h-5 animate-spin" />Authenticating...</>
             ) : (
-              <>
-                <LogIn className="w-5 h-5" />
-                Login
-              </>
+              <><LogIn className="w-5 h-5" />Login</>
             )}
           </button>
 
           <div className="mt-3">
             <button
-              onClick={() => {
-                setUsername('guest');
-                setPassword('guest');
-                setTimeout(() => handleLogin(), 100);
-              }}
+              onClick={() => { setUsername('guest'); setPassword('guest'); setTimeout(() => handleLogin(), 100); }}
               disabled={loading}
               className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -466,11 +409,8 @@ export function LoginPage() {
 
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link 
-                to="/register" 
-                className="text-[#4CBB17] hover:text-[#3DA013] font-semibold hover:underline"
-              >
+              {"Don't have an account? "}
+              <Link to="/register" className="text-[#4CBB17] hover:text-[#3DA013] font-semibold hover:underline">
                 Register here
               </Link>
             </p>
