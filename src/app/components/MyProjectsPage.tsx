@@ -298,7 +298,7 @@ export function MyProjectsPage() {
       // MongoDB will auto-generate the _id field, so we don't include it
       const apiData = {
         mongoid: currentUser.mongoid || currentUser._id,
-        userid: currentUser.uid.toString(),
+        userid: (currentUser.uid || currentUser._id || currentUser.mongoid || '').toString(),
         instanceid: newProjectData.instanceid || generatedProjectId,
         projectname: newProjectData.projectname,
         projectid: generatedProjectId,
