@@ -53,9 +53,8 @@ export function LoginPage() {
     setError('');
 
     try {
+      // HARDCODED USERS CHECK FIRST
       if ((username === 'john' && password === 'john') || (username === 'portia' && password === 'portia')) {
-        console.log('✅ User authenticated via hardcoded credentials:', username);
-        
         const hardcodedUser = {
           _id: username === 'john' ? 'local_user_001' : 'local_user_002',
           userid: username === 'john' ? 1 : 2,
@@ -68,7 +67,7 @@ export function LoginPage() {
           fullname: username === 'john' ? 'John Doe' : 'Portia Smith',
           displayname: username === 'john' ? 'John Doe' : 'Portia Smith'
         };
-        
+
         localStorage.setItem('isLoggedIn', JSON.stringify(true));
         localStorage.removeItem('isGuestMode');
         localStorage.setItem('currentUser', JSON.stringify({
@@ -80,7 +79,7 @@ export function LoginPage() {
           role: hardcodedUser.role,
           publicprojectid: getGlobalProjectId()
         }));
-        
+
         await sendLoginLog(hardcodedUser.userid, `User ${hardcodedUser.username} logged in (hardcoded)`);
         await ensurePublicProject({
           userid: hardcodedUser.userid,
@@ -96,41 +95,35 @@ export function LoginPage() {
         return;
       }
 
-      console.log('Step 1: Checking local users database...');
+      // STEP 1: Check local users.json
       let localAuthSuccess = false;
-      
+
       try {
         const localResponse = await fetch('/data/users.json', {
           method: 'GET',
           headers: { 'Accept': 'application/json' }
         });
 
-        console.log('Local users.json response:', localResponse.status);
-
         if (localResponse.ok) {
           const contentType = localResponse.headers.get('content-type');
           if (!contentType || !contentType.includes('application/json')) {
-            console.warn('⚠️ Local users.json returned HTML instead of JSON, skipping');
             throw new Error('Not JSON');
           }
           const localUsers: User[] = await localResponse.json();
-          console.log('✓ Local users loaded:', localUsers.length, 'users');
-          
           const localUser = localUsers.find(
             (u) => u.username === username && u.plainpassword === password
           );
-          
+
           if (localUser) {
-            console.log('✅ User authenticated from local database:', localUser.username);
             const isGuest = localUser.role === 'guest';
-            
+
             localStorage.setItem('isLoggedIn', JSON.stringify(true));
             if (isGuest) {
               localStorage.setItem('isGuestMode', JSON.stringify(true));
             } else {
               localStorage.removeItem('isGuestMode');
             }
-            
+
             localStorage.setItem('currentUser', JSON.stringify({
               _id: localUser._id,
               mongoid: localUser._id,
@@ -140,7 +133,7 @@ export function LoginPage() {
               role: localUser.role,
               publicprojectid: (localUser as any).publicprojectid || getGlobalProjectId()
             }));
-            
+
             await sendLoginLog(localUser.userid, `User ${localUser.username} logged in (local JSON)`);
 
             if (!isGuest) {
@@ -153,9 +146,7 @@ export function LoginPage() {
               });
             }
 
-            if (isGuest) {
-              await loadGuestConfiguration();
-            }
+            if (isGuest) { await loadGuestConfiguration(); }
 
             window.dispatchEvent(new Event('loginStatusChanged'));
             setIsLoggedIn(true);
@@ -163,82 +154,77 @@ export function LoginPage() {
             setTimeout(() => { navigate('/'); }, 500);
             setLoading(false);
             return;
-          } else {
-            console.log('❌ User not found in local database');
           }
-        } else {
-          console.warn('⚠️ Local users.json returned status:', localResponse.status);
         }
-      } catch (localError: any) {
-        console.log('ℹ️ Local users.json not available, will try API or hardcoded users');
+      } catch {
+        // Local JSON not available — expected in some environments
       }
 
       if (localAuthSuccess) return;
 
+      // Local-only mode: do not fall through to API
       if (localOnly) {
         setError('❌ Invalid username or password.\n\n💡 Local login accepts:\n• john/john\n• portia/portia\n• guest/guest');
         setLoading(false);
         return;
       }
 
-      console.log('Step 2: Trying API authentication...');
-
+      // STEP 2: POST to auth controller
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       try {
-        const response = await fetch('https://api242.onrender.com/', {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
+        const response = await fetch('https://api242.onrender.com/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
           mode: 'cors',
+          body: JSON.stringify({ username, plainpassword: password }),
           signal: controller.signal
         });
 
         clearTimeout(timeoutId);
-        console.log('✓ API server responded with status:', response.status);
 
-        if (!response.ok) throw new Error(`API returned status ${response.status}`);
-
-        const users: User[] = await response.json();
-        console.log('✓ API users fetched successfully:', users.length);
-
-        const user = users.find(
-          (u) => u.username === username && u.plainpassword === password
-        );
-
-        if (user) {
-          console.log('✅ User authenticated from API');
-          
-          localStorage.setItem('isLoggedIn', JSON.stringify(true));
-          localStorage.removeItem('isGuestMode');
-          localStorage.setItem('currentUser', JSON.stringify({
-            _id: user._id,
-            mongoid: user._id,
-            uid: user.userid,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            publicprojectid: user.publicprojectid || getGlobalProjectId()
-          }));
-          
-          await sendLoginLog(user.userid, `User ${user.username} logged in (API)`);
-          await ensurePublicProject({
-            userid: user.userid,
-            username: user.username,
-            mongoid: user._id || '',
-            email: user.email || '',
-            projectid: (user as any).publicprojectid || undefined
-          });
-
-          window.dispatchEvent(new Event('loginStatusChanged'));
-          setIsLoggedIn(true);
-          setTimeout(() => { navigate('/'); }, 500);
-        } else {
+        if (response.status === 401 || response.status === 403) {
           setError('❌ Invalid username or password.\n\n💡 Try: john/john, portia/portia, or guest/guest');
+          setLoading(false);
+          return;
         }
+
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+
+        const user: User = await response.json();
+
+        localStorage.setItem('isLoggedIn', JSON.stringify(true));
+        localStorage.removeItem('isGuestMode');
+        localStorage.setItem('currentUser', JSON.stringify({
+          _id: user._id,
+          mongoid: user._id,
+          uid: user.userid,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          publicprojectid: user.publicprojectid || getGlobalProjectId()
+        }));
+
+        await sendLoginLog(user.userid, `User ${user.username} logged in (API /auth/login)`);
+        await ensurePublicProject({
+          userid: user.userid,
+          username: user.username,
+          mongoid: user._id || '',
+          email: user.email || '',
+          projectid: user.publicprojectid || undefined
+        });
+
+        window.dispatchEvent(new Event('loginStatusChanged'));
+        setIsLoggedIn(true);
+        setTimeout(() => { navigate('/'); }, 500);
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
-        console.log('ℹ️ API server not available:', fetchError.name || fetchError.message);
 
         if (fetchError.name === 'AbortError') {
           setError('⏱️ API server timeout (may be sleeping on Render free tier).\n\n💡 Use hardcoded credentials:\n• john/john (superuser)\n• portia/portia (superuser)\n• guest/guest (demo mode)');
@@ -253,9 +239,6 @@ export function LoginPage() {
         throw fetchError;
       }
     } catch (err: any) {
-      if (err.message && !err.message.includes('Invalid username')) {
-        console.log('ℹ️ Login error:', err.message);
-      }
       setError(err.message || 'Unable to authenticate. Please check your credentials.');
     } finally {
       setLoading(false);
@@ -273,11 +256,12 @@ export function LoginPage() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleLogin();
+    if (e.key === 'Enter') { handleLogin(); }
   };
 
   if (isLoggedIn) {
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
     return (
       <div className="flex-1 bg-gray-50 p-12 overflow-auto max-[999px]:text-[9pt] flex items-center justify-center">
         <div className="max-w-md w-full">
@@ -289,6 +273,7 @@ export function LoginPage() {
               <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome Back!</h1>
               <p className="text-gray-600">You are currently logged in</p>
             </div>
+
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-700 mb-1">Logged in as:</p>
               <p className="font-semibold text-green-800 text-lg">{currentUser.username || 'User'}</p>
@@ -296,6 +281,7 @@ export function LoginPage() {
                 <p className="text-sm text-gray-600 mt-1">{currentUser.email}</p>
               )}
             </div>
+
             <button
               onClick={handleLogout}
               className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold"
@@ -340,6 +326,7 @@ export function LoginPage() {
                 disabled={loading}
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
               <div className="relative">
@@ -398,7 +385,11 @@ export function LoginPage() {
 
           <div className="mt-3">
             <button
-              onClick={() => { setUsername('guest'); setPassword('guest'); setTimeout(() => handleLogin(), 100); }}
+              onClick={() => {
+                setUsername('guest');
+                setPassword('guest');
+                setTimeout(() => handleLogin(), 100);
+              }}
               disabled={loading}
               className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -409,7 +400,7 @@ export function LoginPage() {
 
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              {"Don't have an account? "}
+              Don't have an account?{' '}
               <Link to="/register" className="text-[#4CBB17] hover:text-[#3DA013] font-semibold hover:underline">
                 Register here
               </Link>
@@ -427,7 +418,7 @@ export function LoginPage() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
               <strong>Authentication Flow:</strong><br />
-              Hardcoded users → Local JSON → API fallback<br />
+              Hardcoded users → Local JSON → POST /auth/login<br />
               <span className="text-xs opacity-75">API may be sleeping (Render free tier)</span>
             </p>
           </div>
