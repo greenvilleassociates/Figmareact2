@@ -21,6 +21,10 @@ import { TrophiesPage } from './components/TrophiesPage';
 import { MandATransactionsPage } from './components/MandATransactionsPage';
 import { CapitolTechnologyPage } from './components/CapitolTechnologyPage';
 import { UniversityOfSouthCarolinaPage } from './components/UniversityOfSouthCarolinaPage';
+import { UniversityOfPennsylvaniaPage } from './components/UniversityOfPennsylvaniaPage';
+import { UniversityOfMichiganPage } from './components/UniversityOfMichiganPage';
+import { UniversityOfDelawarePage } from './components/UniversityOfDelawarePage';
+import { UNCWilmingtonPage } from './components/UNCWilmingtonPage';
 import { Assignment1 } from './components/assignments/Assignment1';
 import { Assignment2 } from './components/assignments/Assignment2';
 import { Assignment3 } from './components/assignments/Assignment3';
@@ -78,6 +82,10 @@ export const router = createBrowserRouter([
       { path: 'personal-pages/matransactions', Component: MandATransactionsPage },
       { path: 'personal-pages/capitoltechnology', Component: CapitolTechnologyPage },
       { path: 'personal-pages/usc', Component: UniversityOfSouthCarolinaPage },
+      { path: 'personal-pages/upenn', Component: UniversityOfPennsylvaniaPage },
+      { path: 'personal-pages/umich', Component: UniversityOfMichiganPage },
+      { path: 'personal-pages/udel', Component: UniversityOfDelawarePage },
+      { path: 'personal-pages/uncw', Component: UNCWilmingtonPage },
       { path: 'assignments', Component: AssignmentsPage },
       { path: 'assignments/1', Component: Assignment1 },
       { path: 'assignments/2', Component: Assignment2 },
